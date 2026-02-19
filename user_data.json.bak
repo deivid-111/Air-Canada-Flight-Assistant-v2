@@ -1,0 +1,105 @@
+{
+    "GZHBE1": {
+        "code": "GZHBE1",
+        "flight_number": "AC 940",
+        "dep_city": "Toronto",
+        "arr_city": "Montreal",
+        "dep_code": "YYZ",
+        "arr_code": "YUL",
+        "dep_airport": "Toronto Airport",
+        "arr_airport": "Montreal Airport",
+        "dep_time": "10:00",
+        "arr_time": "11:00",
+        "dep_date": "01012026",
+        "duration": "1H 0M",
+        "terminal": "1",
+        "aircraft": "B789",
+        "host_user_id": "767865431712333874",
+        "gate": {
+            "dep": "N/A",
+            "arr": "N/A"
+        },
+        "meal_service": "Meal Service",
+        "status": "Ended",
+        "alerts": "N/A",
+        "server": {
+            "link": "Flight Not Started"
+        },
+        "event": {
+            "link": "asdasd"
+        },
+        "public_message_id": null,
+        "admin_message_id": "1473794471832453180",
+        "created_at": "2026-02-18T21:31:37.549926Z"
+    },
+    "_day_msgs": {
+        "01012026": "1473794115555557550",
+        "04012026": "1473826351772471440"
+    },
+    "8K3M9V": {
+        "code": "8K3M9V",
+        "flight_number": "AC 100",
+        "dep_city": "Toronto",
+        "arr_city": "Montreal",
+        "dep_code": "YYZ",
+        "arr_code": "YUL",
+        "dep_airport": "Toronto Pearson",
+        "arr_airport": "Montreal Trudeau",
+        "dep_time": "18:00",
+        "arr_time": "19:30",
+        "dep_date": "04012026",
+        "duration": "2h 30m",
+        "terminal": "1",
+        "aircraft": "B789",
+        "host_user_id": "767865431712333874",
+        "gate": {
+            "dep": "N/A",
+            "arr": "N/A"
+        },
+        "meal_service": "Meal Service",
+        "status": "On–Time",
+        "alerts": "N/A",
+        "server": {
+            "link": "N/A"
+        },
+        "event": {
+            "link": "https://discord.gg/fp9x9T4T?event=1473794096240791644"
+        },
+        "public_message_id": null,
+        "admin_message_id": "1473826353588732076",
+        "created_at": "2026-02-18T23:39:43.510097Z"
+    },
+    "U73UP6": {
+        "code": "U73UP6",
+        "flight_number": "AC 493",
+        "dep_city": "Buenos Aires",
+        "arr_city": "Sao Paulo",
+        "dep_code": "EZE",
+        "arr_code": "GRU",
+        "dep_airport": "Ministro Pristarini International Airport",
+        "arr_airport": "Sao Paulo Guaruhlos",
+        "dep_time": "00:00",
+        "arr_time": "01:30",
+        "dep_date": "04012026",
+        "duration": "1h 30m",
+        "terminal": "3",
+        "aircraft": "A333",
+        "host_user_id": "767865431712333874",
+        "gate": {
+            "dep": "N/A",
+            "arr": "N/A"
+        },
+        "meal_service": "Meal Service",
+        "status": "On–Time",
+        "alerts": "N/A",
+        "server": {
+            "link": "<:AIC_Locked:1409728733589405777> Gate Closed"
+        },
+        "event": {
+            "link": "https://discord.gg/fp9x9T4T?event=1473794096240791644"
+        },
+        "public_message_id": null,
+        "admin_message_id": "1473826862626246840",
+        "created_at": "2026-02-18T23:41:44.520052Z"
+    }
+}

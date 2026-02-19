@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AIC — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:      #050608;
+    --surface: #0c0e14;
+    --card:    #10131c;
+    --border:  #1c2235;
+    --accent:  #c8102e;
+    --green:   #00e676;
+    --red:     #ff1744;
+    --dim:     #4a5275;
+    --text:    #d6daf0;
+    --subtext: #6b7494;
+    --mono:    'Share Tech Mono', monospace;
+    --cond:    'Barlow Condensed', sans-serif;
+    --sans:    'Barlow', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* scanlines */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    width: min(420px, 92vw);
+    position: relative;
+    z-index: 1;
+  }
+
+  .card-accent { height: 3px; background: var(--accent); }
+
+  .card-body {
+    padding: 2.5rem 2rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.75rem;
+    text-align: center;
+  }
+
+  .logo-eyebrow {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .logo-title {
+    font-family: var(--cond);
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .desc {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--subtext);
+    line-height: 1.7;
+    max-width: 300px;
+  }
+
+  .btn-discord {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #5865F2;
+    border: none;
+    color: #fff;
+    font-family: var(--cond);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 13px 28px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s;
+    width: 100%;
+  }
+  .btn-discord:hover { background: #4752C4; }
+
+  .error-box {
+    display: none;
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--red);
+    background: rgba(255,23,68,0.07);
+    border: 1px solid rgba(255,23,68,0.4);
+    padding: 10px 14px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .card-footer {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--dim);
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-accent"></div>
+  <div class="card-body">
+    <div>
+      <div class="logo-eyebrow">Air Canada &mdash; PTFS Operations</div>
+      <div class="logo-title">Application Dashboard</div>
+    </div>
+
+    <p class="desc">
+      Sign in with your Discord account to access the operations panel.
+      You must hold the required staff role.
+    </p>
+
+    <div class="error-box" id="error-box">
+      ⚠&nbsp; Access denied — you don't hold the required staff role.<br>
+      <span style="opacity:.7">Contact an administrator if you believe this is an error.</span>
+    </div>
+
+    <a class="btn-discord" href="/auth/login">
+      <!-- Discord logo -->
+      <svg width="20" height="20" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M60.1 4.9A58.5 58.5 0 0 0 45.5.4a.2.2 0 0 0-.2.1 40.7 40.7 0 0 0-1.8 3.7 54 54 0 0 0-16.2 0A37.5 37.5 0 0 0 25.5.5a.2.2 0 0 0-.2-.1A58.3 58.3 0 0 0 10.7 4.9a.2.2 0 0 0-.1.1C1.6 18.1-.9 31 .3 43.7a.2.2 0 0 0 .1.2 58.8 58.8 0 0 0 17.7 8.9.2.2 0 0 0 .2-.1 42 42 0 0 0 3.6-5.9.2.2 0 0 0-.1-.3 38.7 38.7 0 0 1-5.5-2.6.2.2 0 0 1 0-.4l1.1-.8a.2.2 0 0 1 .2 0c11.5 5.3 24 5.3 35.4 0a.2.2 0 0 1 .2 0l1.1.8a.2.2 0 0 1 0 .4 36.1 36.1 0 0 1-5.6 2.6.2.2 0 0 0-.1.3 47 47 0 0 0 3.6 5.9.2.2 0 0 0 .2.1 58.6 58.6 0 0 0 17.8-8.9.2.2 0 0 0 .1-.2c1.4-14.8-2.4-27.6-10-39a.2.2 0 0 0-.1 0ZM23.7 36c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.6 0 6.4 3.3 6.4 7.2 0 4-2.9 7.2-6.4 7.2Zm23.6 0c-3.5 0-6.4-3.2-6.4-7.2s2.9-7.2 6.4-7.2c3.6 0 6.4 3.3 6.4 7.2 0 4-2.8 7.2-6.4 7.2Z" fill="currentColor"/>
+      </svg>
+      Sign in with Discord
+    </a>
+  </div>
+  <div class="card-footer">Air Canada PTFS &mdash; Staff Only</div>
+</div>
+
+<script>
+  // Show error if redirected back with ?error=no_role or ?error=1
+  const p = new URLSearchParams(window.location.search);
+  const err = p.get('error');
+  if (err) {
+    const box = document.getElementById('error-box');
+    if (err === 'no_role') {
+      box.innerHTML = '⚠&nbsp; Access denied — you don\'t hold the required staff role.<br><span style="opacity:.7">Contact an administrator if you believe this is an error.</span>';
+    } else {
+      box.innerHTML = '⚠&nbsp; Authentication failed. Please try again.';
+    }
+    box.style.display = 'block';
+  }
+</script>
+</body>
+</html>

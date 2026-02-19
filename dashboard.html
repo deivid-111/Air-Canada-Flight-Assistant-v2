@@ -1,0 +1,3079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AIC — PTFS Operations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:       #050608;
+    --surface:  #0c0e14;
+    --card:     #10131c;
+    --border:   #1c2235;
+    --accent:   #c8102e;
+    --accent2:  #0055a5;
+    --green:    #00e676;
+    --yellow:   #ffd740;
+    --red:      #ff1744;
+    --blue:     #448aff;
+    --dim:      #4a5275;
+    --text:     #d6daf0;
+    --subtext:  #6b7494;
+    --mono:     'Share Tech Mono', monospace;
+    --cond:     'Barlow Condensed', sans-serif;
+    --sans:     'Barlow', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── SCANLINES ──────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ─── TOPBAR ─────────────────────────────────── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 60px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .logo-eyebrow {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .logo-title {
+    font-family: var(--cond);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--subtext);
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  .status-dot.err { background: var(--red); box-shadow: 0 0 8px var(--red); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .clock {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--blue);
+    letter-spacing: 0.1em;
+  }
+
+  /* ─── SUBNAV ─────────────────────────────────── */
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 2rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  nav button {
+    font-family: var(--cond);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--subtext);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  /* ─── SEARCH BAR ─────────────────────────────── */
+  .search-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    padding: 8px 0;
+  }
+
+  .search-area select,
+  .search-area input {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-area select:focus,
+  .search-area input:focus { border-color: var(--dim); }
+
+  .btn-refresh {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--dim);
+    color: var(--subtext);
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-refresh:hover { border-color: var(--blue); color: var(--blue); }
+
+  .btn-add {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: #fff;
+    padding: 5px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-add:hover { background: #a50d24; border-color: #a50d24; }
+
+  /* ─── STAT STRIP ─────────────────────────────── */
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr) auto;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .stat-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px 2rem;
+    border-right: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-cell::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .stat-cell.total::before { background: var(--dim); }
+  .stat-cell.accepted::before { background: var(--green); }
+  .stat-cell.denied::before { background: var(--red); }
+  .stat-cell.pending::before { background: var(--yellow); }
+  .stat-cell.ended::before { background: var(--dim); }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--subtext);
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-family: var(--cond);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  /* ─── MAIN LAYOUT ────────────────────────────── */
+  main {
+    padding: 1.5rem 2rem;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  /* ─── SECTION HEADER ─────────────────────────── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ─── TABLE ──────────────────────────────────── */
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead th {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--subtext);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+    cursor: pointer;
+  }
+
+  tbody tr:hover { background: var(--card); }
+
+  tbody td {
+    padding: 10px 12px;
+    vertical-align: middle;
+    white-space: nowrap;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text);
+  }
+
+  .mono { font-family: var(--mono); font-size: 11px; }
+
+  .flight-num {
+    font-family: var(--cond);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #fff;
+  }
+
+  .route {
+    font-family: var(--cond);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--text);
+  }
+
+  .route span {
+    color: var(--dim);
+    font-weight: 400;
+    font-size: 11px;
+    margin: 0 4px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+
+  .badge-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+  }
+
+  .badge.ontime  { background: rgba(0,230,118,0.1);  color: var(--green);  }
+  .badge.delayed { background: rgba(255,215,64,0.1);  color: var(--yellow); }
+  .badge.cancel  { background: rgba(255,23,68,0.1);   color: var(--red);    }
+  .badge.resched { background: rgba(68,138,255,0.1);  color: var(--blue);   }
+  .badge.na      { background: rgba(74,82,117,0.15);  color: var(--dim);    }
+
+  .badge.ontime  .badge-dot { background: var(--green);  }
+  .badge.delayed .badge-dot { background: var(--yellow); }
+  .badge.cancel  .badge-dot { background: var(--red);    }
+  .badge.resched .badge-dot { background: var(--blue);   }
+  .badge.na      .badge-dot { background: var(--dim);    }
+
+  .action-btn {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--subtext);
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-right: 4px;
+  }
+
+  .action-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .action-btn.danger:hover { border-color: var(--red); color: var(--red); }
+
+  /* ─── DRAWER / DETAIL PANEL ──────────────────── */
+  .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+  .drawer {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 480px;
+    background: var(--card);
+    border-left: 1px solid var(--border);
+    z-index: 201;
+    transform: translateX(100%);
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .drawer.open { transform: translateX(0); }
+
+  .drawer-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .drawer-flight-num {
+    font-family: var(--cond);
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .drawer-route {
+    font-family: var(--cond);
+    font-size: 1.1rem;
+    color: var(--subtext);
+    letter-spacing: 0.05em;
+    margin-top: 4px;
+  }
+
+  .drawer-close {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--subtext);
+    width: 32px; height: 32px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 14px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .drawer-close:hover { border-color: var(--red); color: var(--red); }
+
+  .drawer-body { padding: 1.5rem; flex: 1; }
+
+  .drawer-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .drawer-section-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .drawer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .drawer-field label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--subtext);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .drawer-field .val {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .drawer-field.edit input,
+  .drawer-field.edit select {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .drawer-field.edit input:focus,
+  .drawer-field.edit select:focus { border-color: var(--blue); }
+
+  .drawer-actions {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--accent2);
+    border: 1px solid var(--accent2);
+    color: #fff;
+    padding: 8px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-primary:hover { background: #0066c7; }
+
+  .btn-ghost {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--subtext);
+    padding: 8px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+  /* ─── TOAST ──────────────────────────────────── */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toast {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    color: var(--text);
+    padding: 10px 16px;
+    min-width: 240px;
+    animation: slideIn 0.2s ease;
+  }
+
+  .toast.err { border-left-color: var(--red); }
+
+  @keyframes slideIn {
+    from { transform: translateX(40px); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+  }
+
+  /* ─── EMPTY STATE ────────────────────────────── */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 2rem;
+    color: var(--dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    gap: 12px;
+  }
+
+  .empty-icon {
+    font-size: 2.5rem;
+    opacity: 0.3;
+  }
+
+  /* ─── LOADING ────────────────────────────────── */
+  .loading-bar {
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    animation: loadbar 1s infinite;
+    transform-origin: left;
+  }
+
+  @keyframes loadbar {
+    0%   { transform: scaleX(0); }
+    50%  { transform: scaleX(0.7); }
+    100% { transform: scaleX(1); opacity: 0; }
+  }
+
+  /* ─── DATE GROUP HEADER ──────────────────────── */
+  .date-group-header td {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--subtext);
+    background: var(--surface);
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .alerts-cell {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--yellow);
+    font-size: 11px;
+    font-family: var(--mono);
+  }
+
+  .alerts-cell.na { color: var(--dim); }
+
+  /* ─── RESPONSIVE ─────────────────────────────── */
+  @media (max-width: 900px) {
+    .stat-strip { grid-template-columns: 1fr 1fr 1fr; }
+    .drawer { width: 100%; }
+    .drawer-grid { grid-template-columns: 1fr; }
+    main { padding: 1rem; }
+  }
+
+  /* ─── ADD FLIGHT MODAL ───────────────────── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 300; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -48%) scale(0.97);
+    width: min(660px, 95vw); max-height: 88vh;
+    background: var(--card); border: 1px solid var(--border);
+    z-index: 301; opacity: 0; pointer-events: none;
+    transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .modal.open { opacity: 1; pointer-events: all; transform: translate(-50%,-50%) scale(1); }
+
+  .modal-header {
+    padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0;
+  }
+  .modal-title {
+    font-family: var(--cond); font-size: 1.3rem; font-weight: 700;
+    letter-spacing: 0.04em; color: #fff; line-height: 1;
+  }
+  .modal-sub {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em;
+    color: var(--subtext); margin-top: 4px;
+    text-transform: uppercase;
+  }
+  .modal-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; }
+  .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-grid .full { grid-column: 1 / -1; }
+  .modal-section-title {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--dim);
+    grid-column: 1/-1; margin-top: 8px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .add-error {
+    display: none; margin-top: 12px;
+    font-family: var(--mono); font-size: 11px; color: var(--red);
+    padding: 8px 12px; border: 1px solid var(--red);
+    background: rgba(255,23,68,0.07);
+  }
+
+  /* ─── USER CHIP ──────────────────────────────── */
+  .user-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .user-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+  }
+
+  .user-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--text);
+  }
+
+  .btn-logout {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--subtext);
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+
+  .btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+  /* ─── ENDED FLIGHTS SECTION ──────────────── */
+  .ended-section {
+    margin-top: 2rem;
+  }
+
+  .ended-section .section-label { color: var(--dim); }
+
+  .ended-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    background: rgba(74,82,117,0.2);
+    border: 1px solid var(--border);
+    color: var(--dim);
+    border-radius: 2px;
+  }
+
+  tbody tr.ended-row td { color: var(--dim); opacity: 0.7; }
+  tbody tr.ended-row { background: rgba(0,0,0,0.15); }
+
+  /* ─── ADMIN CONTROLS IN DRAWER ───────────── */
+  .drawer-admin-section {
+    background: rgba(200,16,46,0.05);
+    border: 1px solid rgba(200,16,46,0.2);
+    border-radius: 2px;
+    padding: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .drawer-admin-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .admin-btn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .btn-admin {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--subtext);
+    padding: 7px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .btn-admin:hover { border-color: var(--blue); color: var(--blue); }
+  .btn-admin.danger:hover { border-color: var(--red); color: var(--red); }
+  .btn-admin.success:hover { border-color: var(--green); color: var(--green); }
+  .btn-admin.warn:hover { border-color: var(--yellow); color: var(--yellow); }
+  .btn-admin.full { grid-column: 1/-1; }
+
+  .btn-admin.active-state {
+    border-color: var(--green);
+    color: var(--green);
+    background: rgba(0,230,118,0.05);
+  }
+
+  /* ─── MINI MODAL for admin actions ──────── */
+  .mini-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 400; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .mini-modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .mini-modal {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -48%) scale(0.97);
+    width: min(440px, 92vw);
+    background: var(--card); border: 1px solid var(--border);
+    z-index: 401; opacity: 0; pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+  }
+  .mini-modal.open { opacity: 1; pointer-events: all; transform: translate(-50%,-50%) scale(1); }
+
+  .mini-modal-header {
+    padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .mini-modal-title {
+    font-family: var(--cond); font-size: 1.1rem; font-weight: 700;
+    letter-spacing: 0.05em; color: #fff;
+  }
+
+  .mini-modal-body { padding: 1.25rem; }
+  .mini-modal-body label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--subtext); display: block; margin-bottom: 6px;
+  }
+  .mini-modal-body input, .mini-modal-body select, .mini-modal-body textarea {
+    font-family: var(--mono); font-size: 12px;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 12px; width: 100%; outline: none;
+    transition: border-color 0.15s; margin-bottom: 12px;
+    resize: vertical;
+  }
+  .mini-modal-body input:focus, .mini-modal-body select:focus,
+  .mini-modal-body textarea:focus { border-color: var(--blue); }
+
+  .mini-modal-footer {
+    padding: .75rem 1.25rem; border-top: 1px solid var(--border);
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+
+  /* ─── LOGS PANEL ─────────────────────────── */
+  .logs-section { margin-top: 2rem; }
+
+  .logs-toolbar {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+
+  .logs-list {
+    border: 1px solid var(--border);
+    overflow: hidden;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .log-entry {
+    display: grid;
+    grid-template-columns: 72px 130px 1fr auto;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    transition: background 0.1s;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    cursor: pointer;
+  }
+
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry:hover { background: var(--card); }
+
+  .log-entry.has-tb { cursor: pointer; }
+
+  .log-entry.level-error  { border-left: 3px solid var(--red); }
+  .log-entry.level-ok     { border-left: 3px solid var(--green); }
+  .log-entry.level-warn   { border-left: 3px solid var(--yellow); }
+  .log-entry.level-info   { border-left: 3px solid var(--border); }
+
+  /* expanded detail panel */
+  .log-detail {
+    display: none;
+    grid-column: 1 / -1;
+    background: rgba(0,0,0,0.25);
+    border-top: 1px solid var(--border);
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.7;
+  }
+  .log-entry.expanded .log-detail { display: block; }
+  .log-entry.expanded { background: var(--card); }
+
+  .log-detail-grid {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 4px 12px;
+    margin-bottom: 10px;
+  }
+  .log-detail-key { color: var(--dim); text-transform: uppercase; font-size: 9px; letter-spacing: .12em; padding-top: 2px; }
+  .log-detail-val { color: var(--text); word-break: break-word; }
+  .log-detail-val.full-action { color: var(--text); white-space: pre-wrap; }
+
+  .log-detail-tb {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,23,68,0.2);
+    color: #ff8096;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-size: 10px;
+    line-height: 1.6;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+  .log-detail-tb-label {
+    font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--red); margin-bottom: 6px; display: block;
+  }
+
+  .log-entry.level-error  { border-left: 3px solid var(--red); }
+  .log-entry.level-ok     { border-left: 3px solid var(--green); }
+  .log-entry.level-warn   { border-left: 3px solid var(--yellow); }
+  .log-entry.level-info   { border-left: 3px solid var(--border); }
+
+  .log-cell {
+    padding: 9px 12px;
+    display: flex;
+    align-items: flex-start;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .log-cell:last-child { border-right: none; }
+
+  .log-cell-level {
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .log-level-badge {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 2px 5px;
+    border-radius: 2px;
+    font-weight: 700;
+  }
+  .level-error .log-level-badge { background: rgba(255,23,68,0.15); color: var(--red); }
+  .level-ok    .log-level-badge { background: rgba(0,230,118,0.15); color: var(--green); }
+  .level-warn  .log-level-badge { background: rgba(255,215,64,0.15); color: var(--yellow); }
+  .level-info  .log-level-badge { background: rgba(74,82,117,0.2);  color: var(--dim); }
+
+  .log-source-dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--dim); margin-top: 2px;
+  }
+  .source-bot  .log-source-dot { background: var(--blue); }
+  .source-dashboard .log-source-dot { background: var(--accent2); }
+
+  .log-cell-user {
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .log-user-label {
+    font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--dim); margin-bottom: 2px;
+  }
+  .log-user-val {
+    color: var(--blue);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-size: 11px;
+  }
+  .log-user-val.is-system { color: var(--dim); }
+  .log-source-tag {
+    font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  .log-cell-action {
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .log-action-text {
+    color: var(--text);
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  .log-entry.level-error .log-action-text { color: #ffaab8; }
+  .log-error-code {
+    font-size: 9px; color: var(--dim); letter-spacing: 0.1em;
+    font-family: var(--mono);
+  }
+  .log-tb-summary {
+    font-size: 10px; color: var(--red); opacity: 0.8;
+    font-family: var(--mono);
+  }
+
+  .log-cell-expand {
+    width: 32px; flex-shrink: 0; justify-content: center; align-items: center;
+    color: var(--dim); font-size: 14px; border-right: none !important;
+    cursor: pointer; user-select: none;
+  }
+  .log-entry.has-tb .log-cell-expand { color: var(--subtext); }
+  .log-entry.has-tb .log-cell-expand:hover { color: var(--text); }
+
+  .log-traceback {
+    display: none;
+    background: rgba(0,0,0,0.3);
+    border-top: 1px solid rgba(255,23,68,0.2);
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: #ff8096;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.6;
+    grid-column: 1 / -1;
+  }
+  .log-entry.tb-open .log-traceback { display: block; }
+  .log-entry.tb-open { grid-template-rows: auto auto; }
+
+  .log-entry-wrap {
+    display: contents;
+  }
+
+  /* ─── UTC CALCULATOR ─────────────────────── */
+  .calc-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    max-width: 900px;
+  }
+  @media (max-width: 720px) { .calc-layout { grid-template-columns: 1fr; } }
+
+  .calc-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px 22px;
+  }
+  .calc-card-clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: var(--card);
+    border-color: var(--accent2);
+  }
+  .calc-card-world { grid-column: 1 / -1; }
+  .calc-card-main  { grid-column: 2 / 3; }
+  .calc-card-clock { grid-column: 1 / 2; }
+
+  .calc-clock-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 10px;
+  }
+  .calc-clock-time {
+    font-family: var(--cond);
+    font-size: 52px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: .04em;
+    line-height: 1;
+    margin-bottom: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .calc-clock-local {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--subtext);
+    margin-bottom: 4px;
+  }
+  .calc-tz-name {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: .08em;
+  }
+
+  .calc-section-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 14px;
+  }
+
+  .calc-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--subtext);
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .calc-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+  }
+  .calc-field { flex: 1; }
+  .calc-arrow {
+    font-family: var(--mono);
+    color: var(--dim);
+    font-size: 18px;
+    padding-bottom: 8px;
+    flex-shrink: 0;
+  }
+
+  .calc-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .calc-input:focus { border-color: var(--accent2); }
+  .calc-time-input { font-size: 20px; letter-spacing: .05em; }
+
+  .calc-result-box {
+    background: var(--bg);
+    border: 1px solid var(--accent2);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 20px;
+    padding: 8px 10px;
+    letter-spacing: .05em;
+    min-height: 42px;
+  }
+
+  .calc-offset-strip {
+    margin-top: 14px;
+    padding: 8px 12px;
+    background: rgba(0,85,165,0.1);
+    border-left: 3px solid var(--accent2);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--subtext);
+  }
+  .calc-offset-strip strong { color: var(--text); }
+
+  .calc-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .calc-preset-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--subtext);
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all .12s;
+  }
+  .calc-preset-btn:hover { border-color: var(--blue); color: var(--text); }
+
+  .calc-world-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  .calc-world-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+  }
+  .calc-world-city {
+    font-family: var(--mono);
+    font-size: 8px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 4px;
+  }
+  .calc-world-time {
+    font-family: var(--cond);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: .03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .calc-world-offset {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--dim);
+    margin-top: 2px;
+  }
+  .calc-world-item.is-local { border-color: var(--accent2); }
+  .calc-world-item.is-local .calc-world-city { color: var(--accent2); }
+
+  /* ─── LOGS EMPTY / LOADING ────────────────── */
+  .logs-empty {
+    padding: 3rem; text-align: center;
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  /* ─── LOG STATS BAR ──────────────────────── */
+  .log-stats {
+    display: flex; gap: 16px; margin-bottom: 12px;
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .log-stat-item { display: flex; align-items: center; gap: 5px; color: var(--subtext); }
+  .log-stat-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .log-stat-num { font-weight: 700; }
+  .log-stat-item.err .log-stat-dot { background: var(--red); }
+  .log-stat-item.err .log-stat-num { color: var(--red); }
+  .log-stat-item.ok  .log-stat-dot { background: var(--green); }
+  .log-stat-item.ok  .log-stat-num { color: var(--green); }
+  .log-stat-item.info .log-stat-dot { background: var(--dim); }
+  .log-stat-item.warn .log-stat-dot { background: var(--yellow); }
+  .log-stat-item.warn .log-stat-num { color: var(--yellow); }
+
+  /* ─── NAV TABS for main view ─────────────── */
+  .page-tabs {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0 2rem;
+  }
+
+  .page-tab {
+    font-family: var(--cond); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--subtext); background: none; border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 20px; cursor: pointer; transition: color 0.15s, border-color 0.15s;
+  }
+  .page-tab:hover { color: var(--text); }
+  .page-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  /* ─── ANNOUNCE BUTTON ────────────────────── */
+  .btn-announce {
+    font-family: var(--cond);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 8px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-announce:hover { background: var(--accent); color: #fff; }
+
+  /* ─── ANNOUNCE MODALS ────────────────────── */
+  .announce-modal-wide { width: min(660px, 97vw) !important; max-height: 90vh !important; }
+
+  .announce-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 14px;
+  }
+  .announce-tab {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--subtext);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 8px 16px;
+    cursor: pointer;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .announce-tab:hover { color: var(--text); }
+  .announce-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .announce-pane { display: none; }
+  .announce-pane.active { display: block; }
+
+  .template-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+    padding-right: 2px;
+  }
+  .template-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 9px 13px;
+    cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .template-item:hover { border-color: var(--blue); background: var(--card); }
+  .template-item.selected { border-color: var(--accent2); background: rgba(0,85,165,0.12); }
+  .template-name {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    display: block;
+    margin-bottom: 3px;
+  }
+  .template-preview {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--subtext);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+  .template-editor-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .template-editor-hint {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--dim);
+    margin-top: 5px;
+    display: block;
+  }
+  .announce-textarea {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    width: 100%;
+    outline: none;
+    resize: vertical;
+    line-height: 1.6;
+    box-sizing: border-box;
+  }
+  .announce-textarea:focus { border-color: var(--accent2); }
+
+  /* ─── CONFIRM DANGER ─────────────────────── */
+  .danger-confirm-box {
+    background: rgba(255,23,68,0.07);
+    border: 1px solid rgba(255,23,68,0.3);
+    padding: 12px; margin-bottom: 12px;
+    font-family: var(--mono); font-size: 11px; color: var(--red);
+    display: none;
+  }
+  .danger-confirm-box.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ─── HEADER ──────────────────────────── -->
+<header>
+  <div class="logo-group">
+    <span class="logo-eyebrow">Air Canada &mdash; PTFS Operations</span>
+    <span class="logo-title">Application Dashboard</span>
+  </div>
+  <div class="header-right">
+    <div class="status-pill">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <span class="clock" id="clock">00:00:00 UTC</span>
+  </div>
+</header>
+
+<!-- ─── PAGE TABS ─────────────────────────── -->
+<div class="page-tabs">
+  <button class="page-tab active" id="tab-flights" onclick="switchPage('flights')">✈ Flights</button>
+  <button class="page-tab" id="tab-logs" onclick="switchPage('logs')">📋 Logs</button>
+  <button class="page-tab" id="tab-calc" onclick="switchPage('calc')">🕐 UTC Calculator</button>
+</div>
+
+<!-- ─── SUBNAV (Flights page) ────────────── -->
+<nav id="flights-subnav">
+  <button class="active" onclick="setFilter('all',this)">All</button>
+  <button onclick="setFilter('pending',this)">Pending</button>
+  <button onclick="setFilter('ontime',this)">On–Time</button>
+  <button onclick="setFilter('delayed',this)">Delayed</button>
+  <button onclick="setFilter('cancelled',this)">Cancelled</button>
+  <button onclick="setFilter('ended',this)" id="filter-ended-btn">Ended</button>
+
+  <div class="search-area">
+    <select id="search-by">
+      <option value="code">Code</option>
+      <option value="flight">Flight #</option>
+      <option value="route">Route</option>
+    </select>
+    <input type="text" id="search-input" placeholder="search..." oninput="applySearch()" />
+    <button class="btn-refresh" onclick="loadFlights()">↺ Refresh</button>
+    <button class="btn-add" onclick="openAddFlight()">＋ Add Flight</button>
+  </div>
+</nav>
+
+<!-- ─── STAT STRIP ───────────────────────── -->
+<div class="stat-strip">
+  <div class="stat-cell total">
+    <span class="stat-label">Active</span>
+    <span class="stat-value" id="stat-total">–</span>
+  </div>
+  <div class="stat-cell accepted">
+    <span class="stat-label">On–Time</span>
+    <span class="stat-value" id="stat-accepted">–</span>
+  </div>
+  <div class="stat-cell denied">
+    <span class="stat-label">Cancelled</span>
+    <span class="stat-value" id="stat-denied">–</span>
+  </div>
+  <div class="stat-cell pending">
+    <span class="stat-label">Other</span>
+    <span class="stat-value" id="stat-pending">–</span>
+  </div>
+  <div class="stat-cell ended">
+    <span class="stat-label">Ended</span>
+    <span class="stat-value" id="stat-ended" style="color:var(--dim)">–</span>
+  </div>
+  <div class="stat-cell" style="justify-content:center;align-items:center;padding:0 1.5rem;">
+    <button class="btn-announce" onclick="openGlobalAnnounce()">📣 Announce</button>
+  </div>
+</div>
+
+<!-- ─── LOADING BAR ─────────────────────── -->
+<div class="loading-bar" id="loading-bar" style="display:none"></div>
+
+<!-- ─── MAIN TABLE ──────────────────────── -->
+<main id="page-flights">
+  <div class="section-header">
+    <span class="section-label">Active Flight Schedule</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="flights-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Flight</th>
+          <th>Route</th>
+          <th>Date</th>
+          <th>Departure</th>
+          <th>Arrival</th>
+          <th>Aircraft</th>
+          <th>Status</th>
+          <th>Alerts</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="flights-body">
+        <tr><td colspan="10"><div class="empty-state"><span class="empty-icon">✈</span><span>Loading flights...</span></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- ─── UTC CALCULATOR PAGE ───────────────── -->
+<main id="page-calc" style="display:none">
+  <div class="section-header">
+    <span class="section-label">UTC Time Calculator</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="calc-layout">
+
+    <!-- Live UTC clock -->
+    <div class="calc-card calc-card-clock">
+      <div class="calc-clock-label">Current UTC Time</div>
+      <div class="calc-clock-time" id="calc-utc-clock">—</div>
+      <div class="calc-clock-local" id="calc-local-now">—</div>
+      <div class="calc-tz-name" id="calc-tz-name">—</div>
+    </div>
+
+    <!-- Converter -->
+    <div class="calc-card calc-card-main">
+      <div class="calc-section-title">Convert Local → UTC</div>
+
+      <div class="calc-row">
+        <div class="calc-field">
+          <label class="calc-label">Your Local Time</label>
+          <input type="time" id="calc-local-time" class="calc-input calc-time-input" oninput="calcConvert()" />
+        </div>
+        <div class="calc-arrow">→</div>
+        <div class="calc-field">
+          <label class="calc-label">UTC Result</label>
+          <div class="calc-result-box" id="calc-result-time">—</div>
+        </div>
+      </div>
+
+      <div class="calc-row" style="margin-top:12px">
+        <div class="calc-field" style="flex:1">
+          <label class="calc-label">Date (optional)</label>
+          <input type="date" id="calc-local-date" class="calc-input" oninput="calcConvert()" />
+        </div>
+        <div class="calc-field" style="flex:1">
+          <label class="calc-label">UTC Date</label>
+          <div class="calc-result-box" id="calc-result-date" style="min-height:38px;display:flex;align-items:center">—</div>
+        </div>
+      </div>
+
+      <div class="calc-offset-strip" id="calc-offset-strip">
+        Your timezone is <strong id="calc-offset-label">—</strong> from UTC
+      </div>
+
+      <!-- Quick presets -->
+      <div class="calc-section-title" style="margin-top:20px">Common Operations</div>
+      <div class="calc-presets">
+        <button class="calc-preset-btn" onclick="calcSetNow()">Use Current Time</button>
+        <button class="calc-preset-btn" onclick="calcAddHours(1)">+1 hr</button>
+        <button class="calc-preset-btn" onclick="calcAddHours(2)">+2 hr</button>
+        <button class="calc-preset-btn" onclick="calcAddHours(6)">+6 hr</button>
+        <button class="calc-preset-btn" onclick="calcAddHours(-1)">−1 hr</button>
+        <button class="calc-preset-btn" onclick="calcAddHours(-2)">−2 hr</button>
+      </div>
+    </div>
+
+    <!-- World clock strip -->
+    <div class="calc-card calc-card-world">
+      <div class="calc-section-title">World Clock <span style="color:var(--dim);font-weight:400">— relative to your input</span></div>
+      <div class="calc-world-grid" id="calc-world-grid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- UTC → Local reverse -->
+    <div class="calc-card">
+      <div class="calc-section-title">Convert UTC → Local</div>
+      <div class="calc-row">
+        <div class="calc-field">
+          <label class="calc-label">UTC Time</label>
+          <input type="time" id="calc-utc-in" class="calc-input calc-time-input" oninput="calcReverse()" />
+        </div>
+        <div class="calc-arrow">→</div>
+        <div class="calc-field">
+          <label class="calc-label">Your Local Time</label>
+          <div class="calc-result-box" id="calc-reverse-result">—</div>
+        </div>
+      </div>
+      <div class="calc-offset-strip" style="margin-top:10px" id="calc-reverse-strip">Enter a UTC time above</div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ─── LOGS PAGE ─────────────────────────── -->
+<main id="page-logs" style="display:none">
+  <div class="section-header">
+    <span class="section-label">System Logs</span>
+    <div class="section-line"></div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="log-stats" id="log-stats" style="display:none">
+    <div class="log-stat-item err"><div class="log-stat-dot"></div><span class="log-stat-num" id="ls-errors">0</span> errors</div>
+    <div class="log-stat-item warn"><div class="log-stat-dot"></div><span class="log-stat-num" id="ls-warns">0</span> warnings</div>
+    <div class="log-stat-item ok"><div class="log-stat-dot"></div><span class="log-stat-num" id="ls-ok">0</span> success</div>
+    <div class="log-stat-item info"><div class="log-stat-dot"></div><span class="log-stat-num" id="ls-info">0</span> info</div>
+    <div class="log-stat-item info" style="margin-left:auto"><span class="log-stat-num" id="ls-total">0</span> total entries</div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="logs-toolbar">
+    <button class="btn-refresh" onclick="loadLogs()">↺ Refresh Logs</button>
+    <select id="log-filter" style="font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 10px;outline:none;" onchange="filterLogs()">
+      <option value="all">All Levels</option>
+      <option value="error">Errors Only</option>
+      <option value="warn">Warnings</option>
+      <option value="ok">Success</option>
+      <option value="info">Info</option>
+    </select>
+    <select id="log-source" style="font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 10px;outline:none;" onchange="filterLogs()">
+      <option value="all">All Sources</option>
+      <option value="bot">Bot Actions</option>
+      <option value="dashboard">Dashboard</option>
+      <option value="system">System</option>
+    </select>
+    <input type="text" id="log-search" placeholder="search actions..." oninput="filterLogs()"
+      style="font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 10px;outline:none;width:220px;" />
+  </div>
+
+  <div class="logs-list" id="logs-list">
+    <div class="logs-empty">Loading logs…</div>
+  </div>
+</main>
+
+<!-- ─── DRAWER OVERLAY ───────────────────── -->
+<!-- ─── ADD FLIGHT MODAL ─────────────────── -->
+<div class="modal-overlay" id="add-overlay" onclick="closeAddFlight()"></div>
+<div class="modal" id="add-modal">
+  <div class="modal-header">
+    <div>
+      <div class="modal-title">New Flight</div>
+      <div class="modal-sub">Fields marked * are required</div>
+    </div>
+    <button class="drawer-close" onclick="closeAddFlight()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="modal-grid">
+
+      <div class="modal-section-title">Flight Info</div>
+
+      <div class="drawer-field edit">
+        <label>Flight Number *</label>
+        <input id="af-fn" type="text" placeholder="AC8810" />
+      </div>
+      <div class="drawer-field edit">
+        <label>Aircraft Code *</label>
+        <input id="af-ac" type="text" placeholder="B789, A333, A321" />
+      </div>
+      <div class="drawer-field edit">
+        <label>Date *</label>
+        <input id="af-date" type="date" />
+      </div>
+      <div class="drawer-field edit">
+        <label>Duration *</label>
+        <input id="af-dur" type="text" placeholder="1h 30m" />
+      </div>
+      <div class="drawer-field edit">
+        <label>Status</label>
+        <select id="af-status">
+          <option value="N/A">N/A</option>
+          <option value="On–Time">On–Time</option>
+          <option value="Delayed">Delayed</option>
+          <option value="Cancelled">Cancelled</option>
+          <option value="Rescheduled">Rescheduled</option>
+        </select>
+      </div>
+      <div class="drawer-field edit">
+        <label>Meal Service</label>
+        <select id="af-meal">
+          <option value="N/A">N/A</option>
+          <option value="Meal Service">Meal Service</option>
+          <option value="Snack Service">Snack Service</option>
+          <option value="No Meal Service">No Meal Service</option>
+        </select>
+      </div>
+
+      <div class="modal-section-title">Departure</div>
+
+      <div class="drawer-field edit">
+        <label>City *</label>
+        <input id="af-dcity" type="text" placeholder="Toronto" />
+      </div>
+      <div class="drawer-field edit">
+        <label>IATA Code *</label>
+        <input id="af-dcode" type="text" placeholder="YYZ" maxlength="4" />
+      </div>
+      <div class="drawer-field edit full">
+        <label>Airport Name *</label>
+        <input id="af-dairport" type="text" placeholder="Toronto Pearson International Airport" />
+      </div>
+      <div class="drawer-field edit">
+        <label>Time (UTC) *</label>
+        <input id="af-dtime" type="text" placeholder="18:30" maxlength="5" />
+      </div>
+      <div class="drawer-field edit">
+        <label>Terminal *</label>
+        <input id="af-term" type="text" placeholder="1" maxlength="3" />
+      </div>
+
+      <div class="modal-section-title">Arrival</div>
+
+      <div class="drawer-field edit">
+        <label>City *</label>
+        <input id="af-acity" type="text" placeholder="Montreal" />
+      </div>
+      <div class="drawer-field edit">
+        <label>IATA Code *</label>
+        <input id="af-acode" type="text" placeholder="YUL" maxlength="4" />
+      </div>
+      <div class="drawer-field edit full">
+        <label>Airport Name *</label>
+        <input id="af-aairport" type="text" placeholder="Montréal-Trudeau International Airport" />
+      </div>
+      <div class="drawer-field edit">
+        <label>Time (UTC) *</label>
+        <input id="af-atime" type="text" placeholder="19:15" maxlength="5" />
+      </div>
+
+      <div class="modal-section-title">Optional</div>
+
+      <div class="drawer-field edit">
+        <label>Host User ID</label>
+        <input id="af-host" type="text" placeholder="Discord user ID" />
+      </div>
+      <div class="drawer-field edit">
+        <label>Event Link</label>
+        <input id="af-event" type="text" placeholder="https://..." />
+      </div>
+
+    </div>
+    <div class="add-error" id="add-error"></div>
+  </div>
+  <div class="drawer-actions">
+    <button class="btn-primary" onclick="submitAddFlight()">Create Flight</button>
+    <button class="btn-ghost" onclick="closeAddFlight()">Cancel</button>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- ─── MINI MODAL: Start Flight ─────────── -->
+<div class="mini-modal-overlay" id="start-overlay" onclick="closeMiniModal('start')"></div>
+<div class="mini-modal" id="start-modal">
+  <div class="mini-modal-header">
+    <span class="mini-modal-title">Start Flight</span>
+    <button class="drawer-close" onclick="closeMiniModal('start')">✕</button>
+  </div>
+  <div class="mini-modal-body">
+    <label>Server Link *</label>
+    <input type="text" id="sm-server-link" placeholder="https://www.roblox.com/games/..." />
+    <label>Spawn Location</label>
+    <input type="text" id="sm-spawn" placeholder="e.g. Terminal 1 Check-In" />
+  </div>
+  <div class="mini-modal-footer">
+    <button class="btn-ghost" onclick="closeMiniModal('start')">Cancel</button>
+    <button class="btn-primary" onclick="submitStartFlight()">Start Flight</button>
+  </div>
+</div>
+
+<!-- ─── MINI MODAL: Send Reminder ────────── -->
+<div class="mini-modal-overlay" id="remind-overlay" onclick="closeMiniModal('remind')"></div>
+<div class="mini-modal" id="remind-modal">
+  <div class="mini-modal-header">
+    <span class="mini-modal-title">Send Reminder</span>
+    <button class="drawer-close" onclick="closeMiniModal('remind')">✕</button>
+  </div>
+  <div class="mini-modal-body">
+    <label>Time Until Departure (e.g. "30 MINUTES", "1 HOUR")</label>
+    <input type="text" id="sm-remind-time" placeholder="30 MINUTES" />
+  </div>
+  <div class="mini-modal-footer">
+    <button class="btn-ghost" onclick="closeMiniModal('remind')">Cancel</button>
+    <button class="btn-primary" onclick="submitSendReminder()">Send Reminder</button>
+  </div>
+</div>
+
+<!-- ─── ANNOUNCE MODAL ────────────────────── -->
+<div class="mini-modal-overlay" id="announce-overlay" onclick="closeMiniModal('announce')"></div>
+<div class="mini-modal" id="announce-modal" style="width:min(540px,95vw)">
+  <div class="mini-modal-header">
+    <span class="mini-modal-title">📣 Send Announcement</span>
+    <button class="drawer-close" onclick="closeMiniModal('announce')">✕</button>
+  </div>
+  <div class="mini-modal-body">
+    <label>Channel</label>
+    <input type="text" value="Announcement Channel" disabled style="opacity:.5;cursor:not-allowed" />
+    <label>Message *</label>
+    <textarea id="announce-msg" rows="6" placeholder="Type your announcement here...&#10;&#10;Supports Discord markdown: **bold**, *italic*, > quote, @&amp;RoleID"></textarea>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:-4px;">
+      <label style="margin:0;white-space:nowrap">Quick Insert</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-ghost" style="padding:3px 8px;font-size:9px" onclick="insertSnippet('@here ')">@here</button>
+        <button class="btn-ghost" style="padding:3px 8px;font-size:9px" onclick="insertSnippet('**')">bold</button>
+        <button class="btn-ghost" style="padding:3px 8px;font-size:9px" onclick="insertSnippet('> ')">quote</button>
+        <button class="btn-ghost" style="padding:3px 8px;font-size:9px" onclick="insertSnippet('# ')">heading</button>
+      </div>
+    </div>
+    <div id="announce-preview" style="display:none;margin-top:12px;background:rgba(0,0,0,0.3);border:1px solid var(--border);padding:10px 12px;font-size:12px;color:var(--text);white-space:pre-wrap;font-family:var(--sans);border-radius:2px;max-height:120px;overflow-y:auto"></div>
+  </div>
+  <div class="mini-modal-footer" style="justify-content:space-between">
+    <button class="btn-ghost" style="font-size:9px" onclick="toggleAnnouncePreview()">👁 Preview</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn-ghost" onclick="closeMiniModal('announce')">Cancel</button>
+      <button class="btn-primary" onclick="submitAnnounce()">Send to Discord</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─── GLOBAL ANNOUNCE MODAL ─────────────── -->
+<div class="mini-modal-overlay" id="gannounce-overlay" onclick="closeMiniModal('gannounce')"></div>
+<div class="mini-modal" id="gannounce-modal" style="width:min(500px,95vw)">
+  <div class="mini-modal-header">
+    <span class="mini-modal-title">📣 Global Announcement</span>
+    <button class="drawer-close" onclick="closeMiniModal('gannounce')">✕</button>
+  </div>
+  <div class="mini-modal-body">
+    <label>Message</label>
+    <textarea id="ga-msg" class="announce-textarea" rows="7" placeholder="Write your announcement...&#10;Supports Discord markdown: **bold**, # heading, > quote, :emoji:"></textarea>
+  </div>
+  <div class="mini-modal-footer" style="justify-content:space-between">
+    <div style="font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase">→ Announcement Channel</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-ghost" onclick="closeMiniModal('gannounce')">Cancel</button>
+      <button class="btn-primary" onclick="submitGlobalAnnounce()">Send to Discord</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── PER-FLIGHT ANNOUNCE MODAL ────────── -->
+<div class="mini-modal-overlay" id="pfannounce-overlay" onclick="closeMiniModal('pfannounce')"></div>
+<div class="mini-modal announce-modal-wide" id="pfannounce-modal">
+  <div class="mini-modal-header">
+    <div>
+      <div class="mini-modal-title">📣 Flight Announcement</div>
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--subtext);margin-top:3px;text-transform:uppercase">
+        Flight <span id="pa-flight-code">—</span> &nbsp;·&nbsp; <span id="pa-flight-num">—</span>
+      </div>
+    </div>
+    <button class="drawer-close" onclick="closeMiniModal('pfannounce')">✕</button>
+  </div>
+  <div class="mini-modal-body" style="overflow-y:auto;max-height:calc(88vh - 130px)">
+    <div class="announce-tabs">
+      <button class="announce-tab active" onclick="switchAnnounceTab('templates',this)">Pre-done Messages</button>
+      <button class="announce-tab" onclick="switchAnnounceTab('custom',this)">Custom Message</button>
+    </div>
+
+    <!-- Templates pane -->
+    <div class="announce-pane active" id="pa-pane-templates">
+      <div class="template-list" id="template-list"></div>
+      <div id="pa-template-editor" style="display:none">
+        <span class="template-editor-label">Edit message — replace ALL-CAPS placeholders</span>
+        <textarea id="pa-template-text" class="announce-textarea" rows="8"></textarea>
+        <span class="template-editor-hint">All-caps words (e.g. HH:MM, DESTINATION, REASON) must be replaced before sending.</span>
+      </div>
+    </div>
+
+    <!-- Custom pane -->
+    <div class="announce-pane" id="pa-pane-custom">
+      <label>Custom Message</label>
+      <textarea id="pa-custom-text" class="announce-textarea" rows="9"
+        placeholder="Write your announcement...&#10;Supports Discord markdown: **bold**, # heading, > quote, :emoji:"></textarea>
+    </div>
+  </div>
+  <div class="mini-modal-footer" style="justify-content:space-between">
+    <div style="font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase">→ Announcement Channel</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-ghost" onclick="closeMiniModal('pfannounce')">Cancel</button>
+      <button class="btn-primary" onclick="submitFlightAnnounce()">Send to Discord</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MINI MODAL: Confirm Delete ───────── -->
+<div class="mini-modal-overlay" id="delete-overlay" onclick="closeMiniModal('delete')"></div>
+<div class="mini-modal" id="delete-modal">
+  <div class="mini-modal-header">
+    <span class="mini-modal-title" style="color:var(--red)">Delete Flight</span>
+    <button class="drawer-close" onclick="closeMiniModal('delete')">✕</button>
+  </div>
+  <div class="mini-modal-body">
+    <div class="danger-confirm-box show" id="delete-confirm-text">
+      ⚠ This action is permanent and cannot be undone.<br>
+      The flight will be removed from Discord embeds and the database.
+    </div>
+    <p style="font-family:var(--mono);font-size:11px;color:var(--subtext);margin-bottom:12px;">
+      Delete flight <strong id="delete-confirm-code" style="color:var(--text)">—</strong>?
+    </p>
+  </div>
+  <div class="mini-modal-footer">
+    <button class="btn-ghost" onclick="closeMiniModal('delete')">Cancel</button>
+    <button class="btn-primary" style="background:var(--red);border-color:var(--red);" onclick="submitDeleteFlight()">Delete Permanently</button>
+  </div>
+</div>
+
+<!-- ─── DETAIL DRAWER ───────────────────── -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div>
+      <div class="drawer-flight-num" id="d-flight-num">—</div>
+      <div class="drawer-route" id="d-route">—</div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+
+  <div class="drawer-body">
+    <!-- ADMIN CONTROLS -->
+    <div class="drawer-admin-section">
+      <div class="drawer-admin-title">⚡ Admin Controls</div>
+      <div class="admin-btn-grid">
+        <button class="btn-admin success" onclick="adminAction('not_started')">⏸ Not Started</button>
+        <button class="btn-admin success" onclick="openStartFlight()">🛫 Start Flight</button>
+        <button class="btn-admin warn" onclick="adminAction('close_flight')">🔒 Close Gates</button>
+        <button class="btn-admin" onclick="openSendReminder()">⏰ Send Reminder</button>
+        <button class="btn-admin" onclick="openFlightAnnounce()">📣 Announce</button>
+        <button class="btn-admin" onclick="refreshDiscordEmbed()">↺ Refresh Embed</button>
+        <button class="btn-admin danger" onclick="confirmDeleteFlight()">🗑 Delete Flight</button>
+        <button class="btn-admin full" onclick="markFlightEnded()">✅ Mark as Ended</button>
+      </div>
+    </div>
+
+    <!-- STATUS SECTION -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">Flight Status</div>
+      <div class="drawer-grid">
+        <div class="drawer-field edit">
+          <label>Status</label>
+          <select id="d-status" onchange="markDirty()">
+            <option value="On–Time">On–Time</option>
+            <option value="Delayed">Delayed</option>
+            <option value="Cancelled">Cancelled</option>
+            <option value="Rescheduled">Rescheduled</option>
+            <option value="N/A">N/A</option>
+          </select>
+        </div>
+        <div class="drawer-field edit">
+          <label>Meal Service</label>
+          <select id="d-meal" onchange="markDirty()">
+            <option value="Meal Service">Meal Service</option>
+            <option value="Snack Service">Snack Service</option>
+            <option value="No Meal Service">No Meal Service</option>
+            <option value="N/A">N/A</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEPARTURE -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">Departure</div>
+      <div class="drawer-grid">
+        <div class="drawer-field">
+          <label>Airport</label>
+          <div class="val" id="d-dep-airport">—</div>
+        </div>
+        <div class="drawer-field">
+          <label>Time</label>
+          <div class="val mono" id="d-dep-time">—</div>
+        </div>
+        <div class="drawer-field">
+          <label>Terminal</label>
+          <div class="val" id="d-terminal">—</div>
+        </div>
+        <div class="drawer-field edit">
+          <label>Gate</label>
+          <input type="text" id="d-gate-dep" maxlength="3" oninput="markDirty()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ARRIVAL -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">Arrival</div>
+      <div class="drawer-grid">
+        <div class="drawer-field">
+          <label>Airport</label>
+          <div class="val" id="d-arr-airport">—</div>
+        </div>
+        <div class="drawer-field">
+          <label>Time</label>
+          <div class="val mono" id="d-arr-time">—</div>
+        </div>
+        <div class="drawer-field edit">
+          <label>Gate</label>
+          <input type="text" id="d-gate-arr" maxlength="3" oninput="markDirty()" />
+        </div>
+        <div class="drawer-field">
+          <label>Aircraft</label>
+          <div class="val" id="d-aircraft">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LINKS -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">Links & Server</div>
+      <div class="drawer-grid">
+        <div class="drawer-field edit">
+          <label>Server Link</label>
+          <input type="text" id="d-server-link" oninput="markDirty()" />
+        </div>
+        <div class="drawer-field edit">
+          <label>Event Link</label>
+          <input type="text" id="d-event-link" oninput="markDirty()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">Alerts</div>
+      <div class="drawer-field edit">
+        <label>Alert Text</label>
+        <input type="text" id="d-alerts" placeholder="Weather delay possible..." oninput="markDirty()" />
+      </div>
+    </div>
+  </div>
+
+  <div class="drawer-actions">
+    <button class="btn-primary" id="save-btn" onclick="saveChanges()" disabled>Save Changes</button>
+    <button class="btn-ghost" onclick="closeDrawer()">Discard</button>
+  </div>
+</div>
+
+<!-- ─── TOAST CONTAINER ──────────────────── -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const API_BASE = '';
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let allFlights  = [];
+let endedFlights = [];
+let allLogs     = [];
+let activeFilter = 'all';
+let currentCode  = null;
+let isDirty      = false;
+let apiOnline    = false;
+let currentPage  = 'flights';
+
+// ─── CLOCK ───────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const hh = String(now.getUTCHours()).padStart(2,'0');
+  const mm = String(now.getUTCMinutes()).padStart(2,'0');
+  const ss = String(now.getUTCSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${hh}:${mm}:${ss} UTC`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── PAGE SWITCHING ───────────────────────────────────────────────────────────
+function switchPage(page) {
+  currentPage = page;
+  document.getElementById('page-flights').style.display = page === 'flights' ? '' : 'none';
+  document.getElementById('page-logs').style.display    = page === 'logs'    ? '' : 'none';
+  document.getElementById('page-calc').style.display    = page === 'calc'    ? '' : 'none';
+  document.getElementById('flights-subnav').style.display = page === 'flights' ? '' : 'none';
+  document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${page}`).classList.add('active');
+  if (page === 'logs') loadLogs();
+  if (page === 'calc') calcInit();
+}
+
+// ─── UTC CALCULATOR ────────────────────────────────────────────────────────────
+const WORLD_ZONES = [
+  { city: 'UTC',        tz: 'UTC' },
+  { city: 'London',     tz: 'Europe/London' },
+  { city: 'Paris',      tz: 'Europe/Paris' },
+  { city: 'Dubai',      tz: 'Asia/Dubai' },
+  { city: 'Mumbai',     tz: 'Asia/Kolkata' },
+  { city: 'Singapore',  tz: 'Asia/Singapore' },
+  { city: 'Tokyo',      tz: 'Asia/Tokyo' },
+  { city: 'Sydney',     tz: 'Australia/Sydney' },
+  { city: 'New York',   tz: 'America/New_York' },
+  { city: 'Chicago',    tz: 'America/Chicago' },
+  { city: 'Denver',     tz: 'America/Denver' },
+  { city: 'Los Angeles',tz: 'America/Los_Angeles' },
+  { city: 'Toronto',    tz: 'America/Toronto' },
+  { city: 'São Paulo',  tz: 'America/Sao_Paulo' },
+  { city: 'Buenos Aires',tz:'America/Argentina/Buenos_Aires' },
+];
+
+let calcClockInterval = null;
+let calcWorldInterval  = null;
+let calcCurrentUtcDate = null; // Date obj representing chosen UTC moment
+
+function calcInit() {
+  calcSetNow();
+  // Tick clock every second
+  if (calcClockInterval) clearInterval(calcClockInterval);
+  calcClockInterval = setInterval(calcTickClock, 1000);
+  calcTickClock();
+
+  // Show user tz info
+  const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  document.getElementById('calc-tz-name').textContent = userTz;
+}
+
+function calcTickClock() {
+  const now = new Date();
+  const hh  = String(now.getUTCHours()).padStart(2,'0');
+  const mm  = String(now.getUTCMinutes()).padStart(2,'0');
+  const ss  = String(now.getUTCSeconds()).padStart(2,'0');
+  document.getElementById('calc-utc-clock').textContent = `${hh}:${mm}:${ss}`;
+
+  const localStr = now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  const dateStr  = now.toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' });
+  document.getElementById('calc-local-now').textContent = `Local: ${localStr}`;
+}
+
+function calcSetNow() {
+  const now = new Date();
+  // Set local time input
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('calc-local-time').value = `${hh}:${mm}`;
+  // Set date input
+  const yyyy = now.getFullYear();
+  const mo   = String(now.getMonth()+1).padStart(2,'0');
+  const dd   = String(now.getDate()).padStart(2,'0');
+  document.getElementById('calc-local-date').value = `${yyyy}-${mo}-${dd}`;
+  calcConvert();
+}
+
+function calcAddHours(h) {
+  const timeEl = document.getElementById('calc-local-time');
+  if (!timeEl.value) { calcSetNow(); return; }
+  const [hh, mm] = timeEl.value.split(':').map(Number);
+  const now = new Date();
+  now.setHours(hh + h, mm, 0, 0);
+  // adjust date if rolled over midnight
+  const dateEl = document.getElementById('calc-local-date');
+  if (dateEl.value) {
+    const d = new Date(dateEl.value + 'T12:00:00');
+    d.setDate(d.getDate() + Math.floor((hh + h) / 24));
+    const yy = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dy = String(d.getDate()).padStart(2,'0');
+    dateEl.value = `${yy}-${mo}-${dy}`;
+  }
+  timeEl.value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  calcConvert();
+}
+
+function calcConvert() {
+  const timeVal = document.getElementById('calc-local-time').value;
+  const dateVal = document.getElementById('calc-local-date').value;
+  if (!timeVal) {
+    document.getElementById('calc-result-time').textContent = '—';
+    document.getElementById('calc-result-date').textContent = '—';
+    calcCurrentUtcDate = null;
+    calcUpdateWorld(null);
+    return;
+  }
+
+  const [lh, lm] = timeVal.split(':').map(Number);
+
+  // Build a local Date representing the chosen local time
+  let localDate;
+  if (dateVal) {
+    localDate = new Date(`${dateVal}T${timeVal}:00`);
+  } else {
+    localDate = new Date();
+    localDate.setHours(lh, lm, 0, 0);
+  }
+
+  calcCurrentUtcDate = localDate;
+
+  // UTC time result
+  const uh = String(localDate.getUTCHours()).padStart(2,'0');
+  const um = String(localDate.getUTCMinutes()).padStart(2,'0');
+  document.getElementById('calc-result-time').textContent = `${uh}:${um}`;
+
+  // UTC date result
+  const ud = localDate.toLocaleDateString('en-CA', { timeZone:'UTC', weekday:'short', year:'numeric', month:'short', day:'numeric' });
+  document.getElementById('calc-result-date').textContent = ud;
+
+  // Offset label
+  const offsetMins = -localDate.getTimezoneOffset();
+  const sign   = offsetMins >= 0 ? '+' : '−';
+  const oH     = String(Math.floor(Math.abs(offsetMins)/60)).padStart(2,'0');
+  const oM     = String(Math.abs(offsetMins)%60).padStart(2,'0');
+  const label  = offsetMins === 0 ? 'exactly 0 hours (you\'re in UTC!)' : `${sign}${oH}:${oM}`;
+  document.getElementById('calc-offset-label').textContent = label;
+
+  calcUpdateWorld(localDate);
+}
+
+function calcReverse() {
+  const utcVal = document.getElementById('calc-utc-in').value;
+  if (!utcVal) {
+    document.getElementById('calc-reverse-result').textContent = '—';
+    document.getElementById('calc-reverse-strip').textContent = 'Enter a UTC time above';
+    return;
+  }
+  const [uh, um] = utcVal.split(':').map(Number);
+  const d = new Date();
+  d.setUTCHours(uh, um, 0, 0);
+
+  const lh = String(d.getHours()).padStart(2,'0');
+  const lm = String(d.getMinutes()).padStart(2,'0');
+  document.getElementById('calc-reverse-result').textContent = `${lh}:${lm}`;
+
+  const offsetMins = -d.getTimezoneOffset();
+  const sign = offsetMins >= 0 ? '+' : '−';
+  const oH = String(Math.floor(Math.abs(offsetMins)/60)).padStart(2,'0');
+  const oM = String(Math.abs(offsetMins)%60).padStart(2,'0');
+  document.getElementById('calc-reverse-strip').innerHTML =
+    `UTC ${utcVal} = <strong>${lh}:${lm} local time</strong> &nbsp;(UTC${sign}${oH}:${oM})`;
+}
+
+function calcUpdateWorld(refDate) {
+  const grid = document.getElementById('calc-world-grid');
+  const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const base = refDate || new Date();
+
+  grid.innerHTML = WORLD_ZONES.map(zone => {
+    const timeStr = base.toLocaleTimeString('en-GB', {
+      timeZone: zone.tz,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    // Compute offset from UTC for this zone
+    const utcMs  = base.getTime();
+    const zoneDateStr = base.toLocaleString('en-CA', { timeZone: zone.tz,
+      year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+    // Rough offset display
+    const utcTimeStr = base.toLocaleTimeString('en-GB', { timeZone:'UTC', hour:'2-digit', minute:'2-digit', hour12:false });
+    const isLocal = zone.tz === userTz;
+    const isUtc   = zone.tz === 'UTC';
+
+    // Compute offset hours by comparing zone time vs UTC time
+    const zoneDate  = new Date(base.toLocaleString('en-US', { timeZone: zone.tz }));
+    const utcDate2  = new Date(base.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const diffMins  = Math.round((zoneDate - utcDate2) / 60000);
+    const sign      = diffMins >= 0 ? '+' : '−';
+    const dH        = String(Math.floor(Math.abs(diffMins)/60)).padStart(2,'0');
+    const dM        = String(Math.abs(diffMins)%60).padStart(2,'0');
+    const offsetStr = isUtc ? 'UTC' : `UTC${sign}${dH}:${dM}`;
+
+    return `<div class="calc-world-item${isLocal ? ' is-local' : ''}">
+      <div class="calc-world-city">${zone.city}${isLocal ? ' ★' : ''}</div>
+      <div class="calc-world-time">${timeStr}</div>
+      <div class="calc-world-offset">${offsetStr}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── API CALLS ────────────────────────────────────────────────────────────────
+async function apiFetch(path, method = 'GET', body = null) {
+  const opts = { method, credentials: 'include', headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API_BASE + path, opts);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ─── LOAD FLIGHTS ─────────────────────────────────────────────────────────────
+async function loadFlights() {
+  showLoading(true);
+  try {
+    const [flights, stats] = await Promise.all([
+      apiFetch('/api/flights'),
+      apiFetch('/api/stats')
+    ]);
+    // Split into active vs ended
+    allFlights   = flights.filter(f => f.status !== 'Ended');
+    endedFlights = flights.filter(f => f.status === 'Ended');
+    setApiStatus(true);
+    updateStats(stats);
+    renderTable();
+    renderEnded();
+  } catch (e) {
+    setApiStatus(false);
+    showToast('Could not reach API — is utilities.py running?', true);
+    document.getElementById('flights-body').innerHTML = `
+      <tr><td colspan="10">
+        <div class="empty-state">
+          <span class="empty-icon">⚠</span>
+          <span>Could Not Reach API</span>
+          <span style="font-size:9px;opacity:.6">Make sure utilities.py is running</span>
+        </div>
+      </td></tr>`;
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ─── LOAD LOGS ────────────────────────────────────────────────────────────────
+async function loadLogs() {
+  document.getElementById('logs-list').innerHTML = '<div class="logs-empty">Loading…</div>';
+  try {
+    const logs = await apiFetch('/api/logs?limit=300');
+    allLogs = logs;
+    filterLogs();
+  } catch(e) {
+    document.getElementById('logs-list').innerHTML =
+      `<div class="logs-empty" style="color:var(--red)">⚠ Failed to load logs — ${e.message}</div>`;
+  }
+}
+
+function filterLogs() {
+  const level  = document.getElementById('log-filter').value;
+  const source = document.getElementById('log-source').value;
+  const q      = (document.getElementById('log-search').value || '').toLowerCase();
+
+  let entries = allLogs;
+  if (level  !== 'all') entries = entries.filter(l => l.level === level);
+  if (source !== 'all') entries = entries.filter(l => (l.source || 'system') === source);
+  if (q) entries = entries.filter(l =>
+    (l.action||'').toLowerCase().includes(q) ||
+    (l.user||'').toLowerCase().includes(q) ||
+    (l.error_code||'').toLowerCase().includes(q)
+  );
+
+  // Update stats
+  const counts = { error: 0, warn: 0, ok: 0, info: 0 };
+  allLogs.forEach(l => { if (counts[l.level] !== undefined) counts[l.level]++; });
+  const statsEl = document.getElementById('log-stats');
+  if (allLogs.length) {
+    statsEl.style.display = 'flex';
+    document.getElementById('ls-errors').textContent = counts.error;
+    document.getElementById('ls-warns').textContent  = counts.warn;
+    document.getElementById('ls-ok').textContent     = counts.ok;
+    document.getElementById('ls-info').textContent   = counts.info;
+    document.getElementById('ls-total').textContent  = allLogs.length;
+  }
+
+  renderLogs(entries);
+}
+
+// Known user IDs → display names (populated from user_data host_user_id if available)
+const KNOWN_USERS = {};
+
+function resolveUser(uid) {
+  if (!uid || uid === 'system') return { label: 'System', isSystem: true };
+  if (KNOWN_USERS[uid]) return { label: KNOWN_USERS[uid], isSystem: false };
+  // Shorten long IDs to last 6 digits with a prefix indicator
+  if (/^\d{10,}$/.test(uid)) return { label: `…${uid.slice(-6)}`, isSystem: false, title: uid };
+  return { label: uid, isSystem: false };
+}
+
+function humanizeAction(action) {
+  // Clean up noisy action strings
+  return action
+    .replace(/^Saved user_data\.json:\s*/, '')  // strip verbose prefix
+    .replace(/```/g, '')
+    .trim();
+}
+
+function levelIcon(level) {
+  return { error: '✕', warn: '⚠', ok: '✓', info: '·' }[level] || '·';
+}
+
+function renderLogs(entries) {
+  const list = document.getElementById('logs-list');
+
+  if (!entries.length) {
+    list.innerHTML = '<div class="logs-empty">No log entries match the current filters.</div>';
+    return;
+  }
+
+  list.innerHTML = entries.map((l, idx) => {
+    const user        = resolveUser(l.user);
+    const action      = humanizeAction(l.action || '');
+    const level       = l.level || 'info';
+    const source      = l.source || 'system';
+    const hasTb       = !!(l.traceback);
+    const sourceLabel = { bot: 'Bot', dashboard: 'Web', system: 'Sys' }[source] || source;
+
+    // Build the detail panel content
+    const detailRows = [
+      ['Level',   level.toUpperCase()],
+      ['Source',  sourceLabel],
+      ['User',    l.user && l.user !== 'system' ? l.user : '—'],
+      ['Time',    (l.time && l.time !== '—') ? l.time : '—'],
+      l.error_code ? ['Error Ref', l.error_code] : null,
+      l.tb_summary  ? ['Exception', l.tb_summary] : null,
+    ].filter(Boolean);
+
+    const detailGridHtml = detailRows.map(([k,v]) =>
+      `<span class="log-detail-key">${k}</span><span class="log-detail-val">${escapeHtml(String(v))}</span>`
+    ).join('');
+
+    const fullActionHtml = action.length > 80
+      ? `<div style="margin-top:8px"><span class="log-detail-key" style="display:block;margin-bottom:4px">Full Message</span><span class="log-detail-val full-action">${escapeHtml(action)}</span></div>`
+      : '';
+
+    const tbHtml = hasTb
+      ? `<span class="log-detail-tb-label">Traceback</span><div class="log-detail-tb">${escapeHtml(l.traceback)}</div>`
+      : '';
+
+    return `<div class="log-entry level-${level} source-${source}" id="le-${idx}" onclick="toggleLogEntry(${idx})">
+      <div class="log-cell log-cell-level">
+        <span class="log-level-badge">${level.toUpperCase()}</span>
+        <div class="log-source-dot" title="${source}"></div>
+      </div>
+      <div class="log-cell log-cell-user">
+        <span class="log-user-label">${sourceLabel}</span>
+        <span class="log-user-val${user.isSystem ? ' is-system' : ''}" title="${l.user || ''}">${escapeHtml(user.label)}</span>
+        ${l.time && l.time !== '—' ? `<span class="log-source-tag">${l.time}</span>` : ''}
+      </div>
+      <div class="log-cell log-cell-action">
+        <span class="log-action-text">${escapeHtml(action.slice(0, 120))}${action.length > 120 ? '…' : ''}</span>
+        ${l.tb_summary ? `<span class="log-tb-summary">↳ ${escapeHtml(l.tb_summary)}</span>` : ''}
+      </div>
+      <div class="log-cell log-cell-expand" id="le-arr-${idx}">▾</div>
+      <div class="log-detail" id="ld-${idx}">
+        <div class="log-detail-grid">${detailGridHtml}</div>
+        ${fullActionHtml}
+        ${tbHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleLogEntry(idx) {
+  const el  = document.getElementById(`le-${idx}`);
+  const arr = document.getElementById(`le-arr-${idx}`);
+  if (!el) return;
+  const opening = !el.classList.contains('expanded');
+  el.classList.toggle('expanded', opening);
+  if (arr) arr.textContent = opening ? '▴' : '▾';
+}
+
+// kept for backwards compat
+function toggleTb(idx) { toggleLogEntry(idx); }
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── STATUS INDICATOR ─────────────────────────────────────────────────────────
+function setApiStatus(online) {
+  apiOnline = online;
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  if (online) {
+    dot.classList.remove('err');
+    txt.textContent = 'API Connected';
+  } else {
+    dot.classList.add('err');
+    txt.textContent = 'API Unreachable — Check Server';
+  }
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function updateStats(stats) {
+  document.getElementById('stat-total').textContent    = stats.total;
+  document.getElementById('stat-accepted').textContent = stats.accepted;
+  document.getElementById('stat-denied').textContent   = stats.denied;
+  document.getElementById('stat-pending').textContent  = stats.pending;
+  document.getElementById('stat-ended').textContent    = stats.ended ?? 0;
+}
+
+// ─── FILTER ───────────────────────────────────────────────────────────────────
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('#flights-subnav button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (f === 'ended') renderEndedTable();
+  else renderTable();
+}
+
+function applySearch() {
+  if (activeFilter === 'ended') renderEndedTable();
+  else renderTable();
+}
+
+function getFiltered() {
+  const by  = document.getElementById('search-by').value;
+  const q   = document.getElementById('search-input').value.toLowerCase().trim();
+  let rows = allFlights;
+
+  if (activeFilter !== 'all' && activeFilter !== 'ended') {
+    const map = { pending: 'N/A', ontime: 'On–Time', delayed: 'Delayed', cancelled: 'Cancelled' };
+    const val = map[activeFilter] || '';
+    rows = rows.filter(f => (f.status || 'N/A').toLowerCase() === val.toLowerCase());
+  }
+
+  if (q) {
+    rows = rows.filter(f => {
+      if (by === 'code')   return f.code.toLowerCase().includes(q);
+      if (by === 'flight') return (f.flight_number||'').toLowerCase().includes(q);
+      if (by === 'route')  return (`${f.dep_code}${f.arr_code}`).toLowerCase().includes(q);
+      return true;
+    });
+  }
+  return rows;
+}
+
+// ─── RENDER TABLE (active flights) ────────────────────────────────────────────
+function renderTable() {
+  const rows = getFiltered();
+  const body = document.getElementById('flights-body');
+
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="10"><div class="empty-state"><span class="empty-icon">✈</span><span>No flights match filters</span></div></td></tr>`;
+    return;
+  }
+
+  const grouped = {};
+  rows.forEach(f => {
+    const d = f.dep_date || 'Unknown Date';
+    if (!grouped[d]) grouped[d] = [];
+    grouped[d].push(f);
+  });
+
+  const sortedDates = Object.keys(grouped).sort((a,b) => new Date(a) - new Date(b));
+
+  let html = '';
+  sortedDates.forEach(date => {
+    const label = formatDateLabel(date);
+    html += `<tr class="date-group-header"><td colspan="10">${label}</td></tr>`;
+    grouped[date].forEach(f => { html += buildRow(f); });
+  });
+
+  body.innerHTML = html;
+}
+
+// ─── RENDER ENDED TABLE (shown when "Ended" filter active) ────────────────────
+function renderEndedTable() {
+  const body = document.getElementById('flights-body');
+  const q    = document.getElementById('search-input').value.toLowerCase().trim();
+  const by   = document.getElementById('search-by').value;
+
+  let rows = endedFlights;
+  if (q) rows = rows.filter(f => {
+    if (by === 'code')   return f.code.toLowerCase().includes(q);
+    if (by === 'flight') return (f.flight_number||'').toLowerCase().includes(q);
+    if (by === 'route')  return (`${f.dep_code}${f.arr_code}`).toLowerCase().includes(q);
+    return true;
+  });
+
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="10"><div class="empty-state"><span class="empty-icon">✓</span><span>${endedFlights.length ? 'No ended flights match search' : 'No ended flights yet'}</span></div></td></tr>`;
+    return;
+  }
+
+  let html = `<tr class="date-group-header"><td colspan="10">Ended Flights — ${endedFlights.length} total</td></tr>`;
+  rows.forEach(f => { html += buildEndedRow(f); });
+  body.innerHTML = html;
+}
+
+// renderEnded kept for backwards compat (no-op now)
+function renderEnded() {}
+
+function formatDateLabel(dateStr) {
+  try {
+    const d = new Date(dateStr + 'T12:00:00Z');
+    return d.toLocaleDateString('en-CA', { weekday:'long', year:'numeric', month:'long', day:'numeric', timeZone:'UTC' });
+  } catch { return dateStr; }
+}
+
+function statusBadge(s) {
+  const map = {
+    'On–Time':    'ontime',
+    'Delayed':    'delayed',
+    'Cancelled':  'cancel',
+    'Rescheduled':'resched',
+    'Ended':      'na',
+  };
+  const cls = map[s] || 'na';
+  return `<span class="badge ${cls}"><span class="badge-dot"></span>${s || 'N/A'}</span>`;
+}
+
+function buildRow(f) {
+  const alerts = (f.alerts && f.alerts !== 'N/A') ? f.alerts : null;
+  return `<tr onclick="openDrawer('${f.code}')">
+    <td class="mono">${f.code}</td>
+    <td><span class="flight-num">${f.flight_number || '—'}</span></td>
+    <td><span class="route">${f.dep_code || '?'}<span>→</span>${f.arr_code || '?'}</span></td>
+    <td class="mono">${f.dep_date || '—'}</td>
+    <td class="mono">${f.dep_time || '—'}</td>
+    <td class="mono">${f.arr_time || '—'}</td>
+    <td class="mono">${f.aircraft || '—'}</td>
+    <td>${statusBadge(f.status)}</td>
+    <td class="alerts-cell ${alerts ? '' : 'na'}">${alerts || 'N/A'}</td>
+    <td>
+      <button class="action-btn" onclick="event.stopPropagation(); openDrawer('${f.code}')">Edit</button>
+    </td>
+  </tr>`;
+}
+
+function buildEndedRow(f) {
+  return `<tr class="ended-row" onclick="openDrawer('${f.code}')">
+    <td class="mono">${f.code}</td>
+    <td><span class="flight-num">${f.flight_number || '—'}</span></td>
+    <td><span class="route">${f.dep_code || '?'}<span>→</span>${f.arr_code || '?'}</span></td>
+    <td class="mono">${f.dep_date || '—'}</td>
+    <td class="mono">${f.dep_time || '—'}</td>
+    <td class="mono">${f.arr_time || '—'}</td>
+    <td class="mono">${f.aircraft || '—'}</td>
+    <td>${statusBadge('Ended')}</td>
+    <td class="alerts-cell na">—</td>
+    <td>
+      <button class="action-btn" onclick="event.stopPropagation(); openDrawer('${f.code}')">View</button>
+    </td>
+  </tr>`;
+}
+
+// ─── DRAWER ───────────────────────────────────────────────────────────────────
+function openDrawer(code) {
+  const f = [...allFlights, ...endedFlights].find(x => x.code === code);
+  if (!f) return;
+  currentCode = code;
+  isDirty = false;
+  document.getElementById('save-btn').disabled = true;
+
+  document.getElementById('d-flight-num').textContent = f.flight_number || '—';
+  document.getElementById('d-route').textContent = `${f.dep_city || f.dep_code} → ${f.arr_city || f.arr_code}  ·  ${f.dep_date || ''}`;
+  document.getElementById('d-status').value     = f.status || 'N/A';
+  document.getElementById('d-meal').value       = f.meal_service || 'N/A';
+  document.getElementById('d-dep-airport').textContent = f.dep_airport || '—';
+  document.getElementById('d-dep-time').textContent    = f.dep_time || '—';
+  document.getElementById('d-terminal').textContent    = f.terminal || '—';
+  document.getElementById('d-gate-dep').value          = f.gate_dep || '';
+  document.getElementById('d-arr-airport').textContent = f.arr_airport || '—';
+  document.getElementById('d-arr-time').textContent    = f.arr_time || '—';
+  document.getElementById('d-gate-arr').value          = f.gate_arr || '';
+  document.getElementById('d-aircraft').textContent    = f.aircraft || '—';
+  document.getElementById('d-server-link').value       = f.server_link !== 'N/A' ? (f.server_link || '') : '';
+  document.getElementById('d-event-link').value        = f.event_link !== 'N/A' ? (f.event_link || '') : '';
+  document.getElementById('d-alerts').value            = f.alerts !== 'N/A' ? (f.alerts || '') : '';
+
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+  currentCode = null;
+}
+
+function markDirty() {
+  isDirty = true;
+  document.getElementById('save-btn').disabled = false;
+}
+
+async function saveChanges() {
+  if (!currentCode) return;
+  const payload = {
+    status:       document.getElementById('d-status').value,
+    meal_service: document.getElementById('d-meal').value,
+    gate_dep:     document.getElementById('d-gate-dep').value || 'N/A',
+    gate_arr:     document.getElementById('d-gate-arr').value || 'N/A',
+    server_link:  document.getElementById('d-server-link').value || 'N/A',
+    event_link:   document.getElementById('d-event-link').value || 'N/A',
+    alerts:       document.getElementById('d-alerts').value || 'N/A',
+  };
+
+  try {
+    showLoading(true);
+    const updated = await apiFetch(`/api/flights/${currentCode}`, 'PATCH', payload);
+    const idx = allFlights.findIndex(x => x.code === currentCode);
+    if (idx !== -1) allFlights[idx] = updated;
+    const eidx = endedFlights.findIndex(x => x.code === currentCode);
+    if (eidx !== -1) endedFlights[eidx] = updated;
+    isDirty = false;
+    document.getElementById('save-btn').disabled = true;
+    renderTable();
+    renderEnded();
+    showToast(`✅  ${currentCode} updated successfully`);
+    closeDrawer();
+  } catch (e) {
+    showToast('Failed to save — API error', true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ─── ADMIN ACTIONS ────────────────────────────────────────────────────────────
+async function adminAction(action) {
+  if (!currentCode) return;
+  const code = currentCode;
+
+  try {
+    showLoading(true);
+    if (action === 'not_started') {
+      await apiFetch(`/api/flights/${code}`, 'PATCH', { server_link: 'Flight Not Started' });
+      showToast(`✅ Server link set to "Flight Not Started"`);
+    } else if (action === 'close_flight') {
+      await apiFetch(`/api/flights/${code}/close`, 'POST', {});
+      showToast(`🔒 ${code} — Gates closed`);
+    }
+    await loadFlights();
+  } catch(e) {
+    showToast(`❌ Action failed: ${e.message}`, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function refreshDiscordEmbed() {
+  if (!currentCode) return;
+  const code = currentCode;
+  try {
+    showLoading(true);
+    await apiFetch(`/api/flights/${code}/refresh`, 'POST', {});
+    showToast(`↺ Discord embed refreshed for ${code}`);
+  } catch(e) {
+    showToast(`❌ Refresh failed: ${e.message}`, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function markFlightEnded() {
+  if (!currentCode) return;
+  const code = currentCode;
+  try {
+    showLoading(true);
+    await apiFetch(`/api/flights/${code}`, 'PATCH', { status: 'Ended' });
+    showToast(`✅ ${code} moved to Ended`);
+    closeDrawer();
+    await loadFlights();
+  } catch(e) {
+    showToast(`❌ Failed: ${e.message}`, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+function confirmDeleteFlight() {
+  if (!currentCode) return;
+  document.getElementById('delete-confirm-code').textContent = currentCode;
+  openMiniModal('delete');
+}
+
+async function submitDeleteFlight() {
+  if (!currentCode) return;
+  const code = currentCode;
+  closeMiniModal('delete');
+  try {
+    showLoading(true);
+    await apiFetch(`/api/flights/${code}`, 'DELETE');
+    allFlights   = allFlights.filter(f => f.code !== code);
+    endedFlights = endedFlights.filter(f => f.code !== code);
+    renderTable();
+    renderEnded();
+    showToast(`🗑 ${code} deleted permanently`);
+    closeDrawer();
+  } catch(e) {
+    showToast(`❌ Delete failed: ${e.message}`, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Start Flight modal
+function openStartFlight() {
+  document.getElementById('sm-server-link').value = '';
+  document.getElementById('sm-spawn').value = '';
+  openMiniModal('start');
+}
+
+async function submitStartFlight() {
+  const serverLink    = document.getElementById('sm-server-link').value.trim();
+  const spawnLocation = document.getElementById('sm-spawn').value.trim();
+  if (!serverLink) { showToast('⚠ Server link is required', true); return; }
+  closeMiniModal('start');
+  try {
+    showLoading(true);
+    await apiFetch(`/api/flights/${currentCode}/start`, 'POST', { server_link: serverLink, spawn_location: spawnLocation });
+    showToast(`🛫 ${currentCode} — flight started!`);
+    await loadFlights();
+  } catch(e) {
+    showToast(`❌ Failed: ${e.message}`, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Send Reminder modal
+function openSendReminder() {
+  document.getElementById('sm-remind-time').value = '';
+  openMiniModal('remind');
+}
+
+async function submitSendReminder() {
+  const ts = document.getElementById('sm-remind-time').value.trim();
+  if (!ts) { showToast('⚠ Enter a time value', true); return; }
+  closeMiniModal('remind');
+  try {
+    showLoading(true);
+    await apiFetch(`/api/flights/${currentCode}/remind`, 'POST', { timestamp: ts });
+    showToast(`📣 Reminder sent: opens in ${ts}`);
+  } catch(e) {
+    showToast(`❌ Failed: ${e.message}`, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ─── GLOBAL ANNOUNCE (top bar) ────────────────────────────────────────────────
+function openGlobalAnnounce() {
+  document.getElementById('ga-msg').value = '';
+  openMiniModal('gannounce');
+  setTimeout(() => document.getElementById('ga-msg').focus(), 100);
+}
+
+async function submitGlobalAnnounce() {
+  const msg = document.getElementById('ga-msg').value.trim();
+  if (!msg) { showToast('⚠ Message cannot be empty', true); return; }
+  closeMiniModal('gannounce');
+  try {
+    showLoading(true);
+    await apiFetch('/api/announce', 'POST', { message: msg });
+    showToast('📣 Announcement sent to Discord!');
+  } catch(e) {
+    showToast(`❌ Failed: ${e.message}`, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ─── PER-FLIGHT ANNOUNCE SYSTEM ───────────────────────────────────────────────
+const ANNOUNCE_TEMPLATES = [
+  {
+    name: 'Departure Time Correction',
+    category: 'Schedule Update',
+    build: (f) => `## Schedule Update\n:AIC_Clock: Dear passengers, the departure time for flight ${f.flight_number} is displayed incorrectly. The correct time is HH:MM UTC.\nWe apologize for any inconvenience caused.`,
+  },
+  {
+    name: 'Departure Date Correction',
+    category: 'Schedule Update',
+    build: (f) => `## Schedule Update\n:AIC_Calendar: Dear passengers, the departure date for flight ${f.flight_number} is displayed incorrectly on the flight information board. The correct date is DDth Month YYYY.\nWe apologize for any inconvenience caused.`,
+  },
+  {
+    name: 'Flight Cancellation',
+    category: 'Service Update',
+    build: (f) => `## Service Update\n:AIC_Status: Dear passengers, flight ${f.flight_number} operating service to ${f.arr_city || 'DESTINATION'}, has been cancelled due to REASON. We sincerely apologize for the inconvenience. This cancellation is the result of unforeseen circumstances beyond our control.\nWe appreciate your understanding and look forward to welcoming you on a future flight.`,
+  },
+  {
+    name: 'Flight Delay',
+    category: 'Service Update',
+    build: (f) => `## Service Update\n:AIC_Warning: Dear passengers, flight ${f.flight_number} operating service to ${f.arr_city || 'DESTINATION'}, has been delayed. The updated departure time is HH:MM UTC\nWe apologize for any inconvenience caused.`,
+  },
+  {
+    name: 'Flight Rescheduled',
+    category: 'Service Update',
+    build: (f) => `## Service Update\n:AIC_Calendar: Dear passengers, flight ${f.flight_number} operating service to ${f.arr_city || 'DESTINATION'}, has been rescheduled. The new operating date and time are DDth Month YYYY.\nWe apologize for any inconvenience caused.`,
+  },
+  {
+    name: 'Duplicate Notification Apology',
+    category: 'Notification Notice',
+    build: (f) => `## Notification Notice\n:AIC_User: Dear passengers, We apologize for the duplicate notification you may have received. Some members of our staff are currently undergoing training and are still becoming familiar with system procedures.\nWe regret the inconvenience and are taking measures to ensure this does not occur again.`,
+  },
+];
+
+let paCurrentFlight = null;
+let paActiveTab = 'templates';
+let paSelectedTemplate = -1;
+
+function openFlightAnnounce() {
+  if (!currentCode) return;
+  const f = [...allFlights, ...endedFlights].find(x => x.code === currentCode);
+  paCurrentFlight = f;
+  paSelectedTemplate = -1;
+
+  document.getElementById('pa-flight-code').textContent = f ? f.code : '—';
+  document.getElementById('pa-flight-num').textContent  = f ? (f.flight_number || '—') : '—';
+
+  // Reset to templates tab
+  document.querySelectorAll('.announce-tab').forEach((b,i) => b.classList.toggle('active', i===0));
+  document.querySelectorAll('.announce-pane').forEach((p,i) => p.classList.toggle('active', i===0));
+  paActiveTab = 'templates';
+
+  document.getElementById('pa-template-text').value = '';
+  document.getElementById('pa-template-editor').style.display = 'none';
+  document.getElementById('pa-custom-text').value = '';
+
+  renderTemplateList(f);
+  openMiniModal('pfannounce');
+}
+
+function renderTemplateList(f) {
+  const list = document.getElementById('template-list');
+  list.innerHTML = ANNOUNCE_TEMPLATES.map((t, i) => {
+    const preview = t.build(f).split('\n')[0].replace(/^## /, '');
+    return `<div class="template-item" id="tmpl-${i}" onclick="selectTemplate(${i})">
+      <span class="template-name">${escapeHtml(t.category)} — ${escapeHtml(t.name)}</span>
+      <span class="template-preview">${escapeHtml(preview.slice(0, 72))}…</span>
+    </div>`;
+  }).join('');
+}
+
+function selectTemplate(idx) {
+  paSelectedTemplate = idx;
+  document.querySelectorAll('.template-item').forEach((el, i) => el.classList.toggle('selected', i === idx));
+  const msg = ANNOUNCE_TEMPLATES[idx].build(paCurrentFlight);
+  const ta  = document.getElementById('pa-template-text');
+  ta.value  = msg;
+  document.getElementById('pa-template-editor').style.display = 'block';
+  ta.focus();
+  ta.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function switchAnnounceTab(tab, btn) {
+  paActiveTab = tab;
+  document.querySelectorAll('.announce-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.querySelectorAll('.announce-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('pa-pane-' + tab).classList.add('active');
+  if (tab === 'custom') setTimeout(() => document.getElementById('pa-custom-text').focus(), 80);
+}
+
+async function submitFlightAnnounce() {
+  let msg = '';
+  if (paActiveTab === 'templates') {
+    msg = document.getElementById('pa-template-text').value.trim();
+    if (!msg) { showToast('⚠ Select and edit a template first', true); return; }
+  } else {
+    msg = document.getElementById('pa-custom-text').value.trim();
+    if (!msg) { showToast('⚠ Message cannot be empty', true); return; }
+  }
+  closeMiniModal('pfannounce');
+  try {
+    showLoading(true);
+    await apiFetch('/api/announce', 'POST', { message: msg, flight_code: currentCode });
+    showToast('📣 Announcement sent to Discord!');
+  } catch(e) {
+    showToast(`❌ Failed: ${e.message}`, true);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ─── MINI MODAL HELPERS ───────────────────────────────────────────────────────
+function openMiniModal(name) {
+  document.getElementById(`${name}-overlay`).classList.add('open');
+  document.getElementById(`${name}-modal`).classList.add('open');
+}
+
+function closeMiniModal(name) {
+  document.getElementById(`${name}-overlay`).classList.remove('open');
+  document.getElementById(`${name}-modal`).classList.remove('open');
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function showLoading(v) {
+  document.getElementById('loading-bar').style.display = v ? 'block' : 'none';
+}
+
+function showToast(msg, isErr = false) {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast' + (isErr ? ' err' : '');
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const me = await fetch('/auth/me', { credentials: 'include' }).then(r => r.json());
+    if (me.authenticated) {
+      const chip = document.getElementById('user-chip');
+      chip.style.display = 'flex';
+      document.getElementById('user-avatar').src = me.avatar || '';
+      document.getElementById('user-avatar').alt = me.username || '';
+      document.getElementById('user-name').textContent = me.username || '';
+    }
+  } catch(e) {}
+  setApiStatus(false);
+  loadFlights();
+  setInterval(loadFlights, 30000);
+}
+init();
+
+// ─── ADD FLIGHT ───────────────────────────────────────────────────────────────
+const AF_FIELDS = ['af-fn','af-ac','af-date','af-dur','af-dcity','af-dcode',
+                   'af-dairport','af-dtime','af-term','af-acity','af-acode',
+                   'af-aairport','af-atime','af-host','af-event'];
+
+function openAddFlight() {
+  AF_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('af-status').value = 'N/A';
+  document.getElementById('af-meal').value   = 'N/A';
+  document.getElementById('add-error').style.display = 'none';
+  document.getElementById('add-overlay').classList.add('open');
+  document.getElementById('add-modal').classList.add('open');
+  document.getElementById('af-fn').focus();
+}
+
+function closeAddFlight() {
+  document.getElementById('add-overlay').classList.remove('open');
+  document.getElementById('add-modal').classList.remove('open');
+}
+
+async function submitAddFlight() {
+  const g  = id => document.getElementById(id).value.trim();
+  const errEl = document.getElementById('add-error');
+  errEl.style.display = 'none';
+
+  const payload = {
+    flight_number: g('af-fn'),
+    aircraft:      g('af-ac').toUpperCase(),
+    dep_date:      g('af-date'),
+    duration:      g('af-dur'),
+    dep_city:      g('af-dcity'),
+    dep_code:      g('af-dcode').toUpperCase(),
+    dep_airport:   g('af-dairport'),
+    dep_time:      g('af-dtime'),
+    terminal:      g('af-term'),
+    arr_city:      g('af-acity'),
+    arr_code:      g('af-acode').toUpperCase(),
+    arr_airport:   g('af-aairport'),
+    arr_time:      g('af-atime'),
+    status:        g('af-status'),
+    meal_service:  g('af-meal'),
+    host_user_id:  g('af-host'),
+    event_link:    g('af-event'),
+  };
+
+  const required = {
+    'Flight Number': payload.flight_number,
+    'Aircraft':      payload.aircraft,
+    'Date':          payload.dep_date,
+    'Duration':      payload.duration,
+    'Dep City':      payload.dep_city,
+    'Dep Code':      payload.dep_code,
+    'Dep Airport':   payload.dep_airport,
+    'Dep Time':      payload.dep_time,
+    'Terminal':      payload.terminal,
+    'Arr City':      payload.arr_city,
+    'Arr Code':      payload.arr_code,
+    'Arr Airport':   payload.arr_airport,
+    'Arr Time':      payload.arr_time,
+  };
+
+  const missing = Object.entries(required).filter(([,v]) => !v).map(([k]) => k);
+  if (missing.length) {
+    errEl.textContent = '⚠ Missing: ' + missing.join(', ');
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    showLoading(true);
+    const created = await apiFetch('/api/flights', 'POST', payload);
+    allFlights.push(created);
+    renderTable();
+    closeAddFlight();
+    showToast(`✅  ${created.flight_number} created — code: ${created.code}`);
+    const stats = await apiFetch('/api/stats');
+    updateStats(stats);
+  } catch(e) {
+    errEl.textContent = '❌ Server error — check utilities.py console';
+    errEl.style.display = 'block';
+  } finally {
+    showLoading(false);
+  }
+}
+
+</script>
+
+</body>
+</html>

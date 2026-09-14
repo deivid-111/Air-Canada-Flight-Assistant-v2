@@ -1,0 +1,111 @@
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+🗑️  Deleted day-schedule message for 20022026 (past UTC date)
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+{"time": "01:51:17", "user": "DEIVID", "action": "Updated flight 9375GW: pax, pax_notes", "level": "ok"}
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+{"time": "05:19:18", "user": "DEIVID", "action": "Updated flight 7P45TA: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_notes", "level": "ok"}
+{"time": "05:19:26", "user": "DEIVID", "action": "Updated flight 7P45TA: status", "level": "ok"}
+{"time": "05:20:23", "user": "DEIVID", "action": "Updated flight 4YB8A0: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_notes", "level": "ok"}
+{"time": "05:20:34", "user": "DEIVID", "action": "Updated flight 4YB8A0: status", "level": "ok"}
+{"time": "05:27:35", "user": "DEIVID", "action": "Created event EVT7KCF9G: TEST on 2026-02-21", "level": "ok"}
+✅ Auth blocklist loaded
+{"time": "05:30:54", "user": "DEIVID", "action": "Created event EVTFX1H0P: TEST TEST on 2026-02-21", "level": "ok"}
+{"time": "05:31:33", "user": "DEIVID", "action": "Deleted event EVT7KCF9G", "level": "warn"}
+{"time": "05:33:35", "user": "DEIVID", "action": "Updated flight G2P103: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:37", "user": "DEIVID", "action": "Updated flight ZALCHY: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:37", "user": "DEIVID", "action": "Updated flight ZALCHY: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:38", "user": "DEIVID", "action": "Updated flight ZALCHY: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:38", "user": "DEIVID", "action": "Updated flight ZALCHY: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:38", "user": "DEIVID", "action": "Updated flight ZALCHY: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:38", "user": "DEIVID", "action": "Updated flight ZALCHY: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:53", "user": "DEIVID", "action": "Updated flight 7P45TA: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:53", "user": "DEIVID", "action": "Updated flight 7P45TA: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:55", "user": "DEIVID", "action": "Updated flight SWYLXJ: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:56", "user": "DEIVID", "action": "Updated flight SWYLXJ: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:56", "user": "DEIVID", "action": "Updated flight SWYLXJ: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:56", "user": "DEIVID", "action": "Updated flight SWYLXJ: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:59", "user": "DEIVID", "action": "Updated flight 2ZO3WI: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:59", "user": "DEIVID", "action": "Updated flight 2ZO3WI: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:59", "user": "DEIVID", "action": "Updated flight 2ZO3WI: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:33:59", "user": "DEIVID", "action": "Updated flight 2ZO3WI: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "05:34:00", "user": "DEIVID", "action": "Updated flight 2ZO3WI: pax, pax_joined, pax_remained", "level": "ok"}
+⏰ Auto-ended flight LUG52M (arr_time 13:30 UTC passed)
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+{"time": "14:04:37", "user": "DEIVID", "action": "Updated flight 0B1JUH: status", "level": "ok"}
+{"time": "14:07:30", "user": "DEIVID", "action": "Updated flight 0B1JUH: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_notes", "level": "ok"}
+✅ Auth blocklist loaded
+{"time": "14:12:43", "user": "DEIVID", "action": "Updated flight H4CD57: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_notes", "level": "ok"}
+{"time": "14:14:12", "user": "DEIVID", "action": "Updated flight H4CD57: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_notes", "level": "ok"}
+{"time": "14:14:13", "user": "DEIVID", "action": "Updated flight H4CD57: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_notes", "level": "ok"}
+{"time": "14:14:18", "user": "DEIVID", "action": "Updated flight H4CD57: status", "level": "ok"}
+{"time": "14:14:54", "user": "DEIVID", "action": "Updated flight 0B1JUH: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_notes", "level": "ok"}
+{"time": "14:15:06", "user": "DEIVID", "action": "Updated flight 0B1JUH: status", "level": "ok"}
+✅ Auth blocklist loaded
+{"time": "14:17:30", "user": "DEIVID", "action": "Updated flight 0B1JUH: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_notes", "level": "ok"}
+{"time": "14:17:31", "user": "DEIVID", "action": "Updated flight 0B1JUH: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_notes", "level": "ok"}
+✅ Auth blocklist loaded
+✅ Backfilled final_status for 181 ended flights (defaulted to On–Time)
+{"time": "14:25:00", "user": "DEIVID", "action": "Updated flight ZALCHY: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_notes", "level": "ok"}
+{"time": "14:25:23", "user": "DEIVID", "action": "Updated flight T391AI: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_notes", "level": "ok"}
+{"time": "14:25:42", "user": "DEIVID", "action": "Updated flight W4KOHO: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "14:25:48", "user": "DEIVID", "action": "Updated flight W4KOHO: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "14:25:51", "user": "DEIVID", "action": "Updated flight W4KOHO: pax, pax_joined, pax_remained", "level": "ok"}
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+{"time": "15:07:00", "user": "DEIVID", "action": "Updated flight 5095SX: server_link", "level": "ok"}
+{"time": "15:08:01", "user": "DEIVID", "action": "Updated flight 5095SX: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_joined, pax_remained, pax_notes, final_status", "level": "ok"}
+⏰ Auto-ended flight 0B1JUH (arr_time 16:10 UTC passed)
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+{"time": "17:44:00", "user": "DEIVID", "action": "Deleted event EVTFX1H0P", "level": "warn"}
+{"time": "17:44:54", "user": "DEIVID", "action": "Created event EVTKY92A2: TEST TEST on 2026-02-21", "level": "ok"}
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+{"time": "18:01:36", "user": "DEIVID", "action": "Created event EVTZW2PLP: Quiz night on 2026-02-21", "level": "ok"}
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+🗑️  Deleted day-schedule message for 21022026 (past UTC date)
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+✅ Auth blocklist loaded
+{"time": "02:17:16", "user": "DEIVID", "action": "Deleted event EVTZW2PLP", "level": "warn"}
+{"time": "02:25:07", "user": "DEIVID", "action": "Updated flight ZALCHY: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "02:25:12", "user": "DEIVID", "action": "Updated flight ZALCHY: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "02:25:18", "user": "DEIVID", "action": "Updated flight 7P45TA: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "02:25:23", "user": "DEIVID", "action": "Updated flight 7P45TA: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "02:25:26", "user": "DEIVID", "action": "Updated flight SWYLXJ: pax, pax_joined, pax_remained", "level": "ok"}
+{"time": "02:33:52", "user": "DEIVID", "action": "Created flight X2YW2X (AC 2500) YYZ→MCO", "level": "ok"}
+{"time": "02:36:23", "user": "DEIVID", "action": "Updated flight X2YW2X: status", "level": "ok"}
+{"time": "02:37:13", "user": "DEIVID", "action": "Updated flight X2YW2X: status, alerts, meal_service, gate_dep, gate_arr, server_link, event_link, pax, pax_joined, pax_remained, pax_notes, final_status", "level": "ok"}

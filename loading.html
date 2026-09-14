@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIC Operations — Security Clearance</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&family=Barlow:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050608;
+      --surface: #0a0c12;
+      --card: #10131e;
+      --border: #1c223a;
+      --accent: #c8102e; /* Air Canada Red */
+      --accent-glow: rgba(200, 16, 46, 0.45);
+      --green: #00e676;
+      --green-glow: rgba(0, 230, 118, 0.35);
+      --text: #d6daf0;
+      --subtext: #6b7494;
+      --dim: #4a5275;
+      --mono: 'Share Tech Mono', monospace;
+      --cond: 'Barlow Condensed', sans-serif;
+      --sans: 'Barlow', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Ambient Cockpit Background Glows */
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(200, 16, 46, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(12, 16, 30, 0.5) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(20, 26, 44, 0.4) 0%, transparent 60%);
+      z-index: -2;
+    }
+
+    /* High-tech grid overlay */
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(28, 34, 58, 0.12) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(28, 34, 58, 0.12) 1px, transparent 1px);
+      z-index: -1;
+    }
+
+    /* Retro Scanlines */
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.15) 2px,
+        rgba(0, 0, 0, 0.15) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+      opacity: 0.8;
+    }
+
+    /* Main Console HUD Frame */
+    .hud-frame {
+      width: min(520px, 92vw);
+      background: rgba(16, 19, 30, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(28, 34, 58, 0.6);
+      box-shadow: 
+        0 24px 64px rgba(0, 0, 0, 0.6),
+        inset 0 0 20px rgba(200, 16, 46, 0.03);
+      position: relative;
+      padding: 2.25rem 2rem 2rem;
+      border-radius: 4px;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      z-index: 10;
+    }
+
+    .hud-frame::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), #ff4d66, var(--accent));
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+
+    /* Cyber Corner Brackets */
+    .corner-bracket {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-color: rgba(200, 16, 46, 0.4);
+      border-style: solid;
+      pointer-events: none;
+    }
+    .top-left { top: 6px; left: 6px; border-width: 1px 0 0 1px; }
+    .top-right { top: 6px; right: 6px; border-width: 1px 1px 0 0; }
+    .bottom-left { bottom: 6px; left: 6px; border-width: 0 0 1px 1px; }
+    .bottom-right { bottom: 6px; right: 6px; border-width: 0 1px 1px 0; }
+
+    /* Top Stats / Telemetry Header */
+    .hud-meta-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--subtext);
+      letter-spacing: 0.12em;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+    }
+    .hud-meta-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hud-meta-dot {
+      width: 5px;
+      height: 5px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--accent);
+      animation: blink 1s ease-in-out infinite alternate;
+    }
+
+    /* Telemetry HUD Circle containing Avatar */
+    .telemetry-hud-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.75rem;
+      position: relative;
+    }
+
+    .telemetry-hud {
+      width: 120px;
+      height: 120px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .telemetry-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* SVG Ring Animations */
+    .ring-outer {
+      transform-origin: center;
+      animation: rotate-cw 16s linear infinite;
+      stroke: var(--border);
+    }
+    .ring-middle {
+      transform-origin: center;
+      animation: rotate-ccw 10s linear infinite;
+      stroke: rgba(200, 16, 46, 0.4);
+      stroke-dasharray: 6 12 18 12;
+    }
+    .ring-inner {
+      transform-origin: center;
+      animation: rotate-cw 6s linear infinite;
+      stroke: rgba(200, 16, 46, 0.75);
+      stroke-dasharray: 4 6;
+    }
+
+    /* Glowing Avatar frame in center */
+    .avatar-wrapper {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid rgba(200, 16, 46, 0.5);
+      box-shadow: 0 0 15px rgba(200, 16, 46, 0.25);
+      overflow: hidden;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .avatar-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .avatar-image.loaded {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Glowing cockpit silhouette default avatar icon */
+    .avatar-fallback {
+      position: absolute;
+      font-size: 26px;
+      color: var(--dim);
+      animation: pulsate-fallback 1.5s ease-in-out infinite alternate;
+    }
+
+    /* Dynamic text blocks */
+    .hud-title-wrap {
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+    .hud-title-eyebrow {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.25em;
+      margin-bottom: 4px;
+    }
+    .hud-title-main {
+      font-family: var(--cond);
+      font-size: 1.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+    }
+
+    /* Digital Segmented Progress Bar */
+    .progress-section {
+      margin-bottom: 1.5rem;
+    }
+    .progress-text-row {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--subtext);
+      margin-bottom: 6px;
+      letter-spacing: 0.05em;
+    }
+    .progress-status-label {
+      color: var(--text);
+    }
+    .progress-pct {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .progress-bar-segmented {
+      display: flex;
+      gap: 3px;
+      height: 16px;
+      width: 100%;
+      background: rgba(28, 34, 58, 0.15);
+      border: 1px solid var(--border);
+      padding: 2px;
+    }
+
+    .progress-block {
+      flex: 1;
+      height: 100%;
+      background: rgba(200, 16, 46, 0.06);
+      border: 1px solid rgba(200, 16, 46, 0.05);
+      transition: all 0.1s ease;
+    }
+
+    .progress-block.active {
+      background: linear-gradient(to bottom, #e31837, var(--accent));
+      border-color: #ff5263;
+      box-shadow: 0 0 8px rgba(200, 16, 46, 0.7);
+    }
+
+    /* Terminal Console Box */
+    .console-terminal {
+      background: rgba(5, 6, 8, 0.85);
+      border: 1px solid var(--border);
+      padding: 0.85rem 1rem;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.6;
+      color: var(--text);
+      height: 110px;
+      overflow-y: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      border-radius: 2px;
+    }
+
+    .console-line {
+      display: flex;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(4px);
+      animation: slide-in-console 0.25s forwards cubic-bezier(0.1, 0.8, 0.3, 1);
+    }
+
+    .console-tag {
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .console-tag.ok {
+      color: var(--green);
+    }
+    .console-msg {
+      color: var(--subtext);
+    }
+    .console-msg.highlight {
+      color: #fff;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.25);
+    }
+
+    .cursor-blink {
+      display: inline-block;
+      width: 6px;
+      height: 12px;
+      background: var(--text);
+      margin-left: 2px;
+      animation: blink 0.8s step-end infinite;
+    }
+
+    /* Full-screen loading fade overlays */
+    .fade-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    .fade-overlay.active {
+      opacity: 1;
+    }
+
+    /* Animations */
+    @keyframes rotate-cw {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes rotate-ccw {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+    @keyframes pulsate-fallback {
+      from { opacity: 0.3; transform: scale(0.95); }
+      to { opacity: 0.8; transform: scale(1.05); }
+    }
+    @keyframes slide-in-console {
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="grid-overlay"></div>
+  <div class="scanlines"></div>
+
+  <!-- Fade-in/out transitions -->
+  <div class="fade-overlay" id="fade-overlay"></div>
+
+  <div class="hud-frame" id="hud-frame">
+    <!-- Cyber Corners -->
+    <div class="corner-bracket top-left"></div>
+    <div class="corner-bracket top-right"></div>
+    <div class="corner-bracket bottom-left"></div>
+    <div class="corner-bracket bottom-right"></div>
+
+    <!-- Meta Header -->
+    <div class="hud-meta-header">
+      <div class="hud-meta-left">
+        <div class="hud-meta-dot"></div>
+        <span>AIC Terminal Link</span>
+      </div>
+      <div>
+        <span>SECURE LINK: ACTIVE</span>
+      </div>
+    </div>
+
+    <!-- Telemetry HUD & Discord Avatar -->
+    <div class="telemetry-hud-wrap">
+      <div class="telemetry-hud">
+        <!-- SVG Dual Rotating Circles -->
+        <svg class="telemetry-svg" viewBox="0 0 120 120">
+          <!-- Outer Navigation Tick Ring -->
+          <circle class="ring-outer" cx="60" cy="60" r="56" fill="none" stroke-width="1.5" stroke-dasharray="2 10 4 6" />
+          <!-- Middle Radar Compass Ring -->
+          <circle class="ring-middle" cx="60" cy="60" r="48" fill="none" stroke-width="1.5" />
+          <!-- Inner Cyber telemetry Ring -->
+          <circle class="ring-inner" cx="60" cy="60" r="40" fill="none" stroke-width="1" />
+        </svg>
+
+        <!-- Center Avatar wrapper -->
+        <div class="avatar-wrapper">
+          <div class="avatar-fallback" id="avatar-fallback">✈</div>
+          <img class="avatar-image" id="avatar-image" src="" alt="Staff Avatar" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Titles -->
+    <div class="hud-title-wrap">
+      <div class="hud-title-eyebrow">Flight Operations Handshake</div>
+      <div class="hud-title-main" id="hud-title-main">Verifying Credentials</div>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div class="progress-section">
+      <div class="progress-text-row">
+        <span class="progress-status-label" id="progress-status-label">Accessing secure database...</span>
+        <span class="progress-pct" id="progress-pct">0%</span>
+      </div>
+      <!-- Progress Segments -->
+      <div class="progress-bar-segmented" id="progress-bar">
+        <!-- Generates 30 blocks in JS -->
+      </div>
+    </div>
+
+    <!-- Terminal Output -->
+    <div class="console-terminal" id="console-terminal">
+      <!-- Lines will be printed sequentially here -->
+      <div class="console-line" id="console-cursor-line">
+        <span class="console-tag">&gt;&gt;</span>
+        <span class="console-msg">System booting...<span class="cursor-blink"></span></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Web Audio Synthesizer Beeps
+    const audioCtxClass = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playSynthBeep(freq = 1400, duration = 0.04, type = 'sine') {
+      try {
+        if (!audioCtx) {
+          audioCtx = new audioCtxClass();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        
+        // Dynamic envelope to prevent clicking
+        gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        // Fallback silently if audio context is blocked
+      }
+    }
+
+    // Config parameters
+    const totalBlocks = 30;
+    const progressBar = document.getElementById('progress-bar');
+    const progressPct = document.getElementById('progress-pct');
+    const statusLabel = document.getElementById('progress-status-label');
+    const consoleTerminal = document.getElementById('console-terminal');
+    const cursorLine = document.getElementById('console-cursor-line');
+    
+    // Generate empty blocks
+    const blockElements = [];
+    for (let i = 0; i < totalBlocks; i++) {
+      const block = document.createElement('div');
+      block.className = 'progress-block';
+      progressBar.appendChild(block);
+      blockElements.push(block);
+    }
+
+    // Terminal lines to type out
+    const bootSteps = [
+      { pct: 10, status: "Establishing secure SSL gateway...", tag: "SYS", msg: "TUNNEL ESTABLISHED // PORT 443" },
+      { pct: 25, status: "Handshaking with Discord API...", tag: "NET", msg: "CONNECTED TO DISCORD GATEWAY // 100% HANDSHAKE" },
+      { pct: 40, status: "Downloading staff records...", tag: "AUTH", msg: "Staff records cached locally [GUILD_ID CHECK OK]" },
+      { pct: 60, status: "Verifying security permissions...", tag: "ROLE", msg: "ROLE_CLEARANCE: AUTHORIZED ACCESS APPROVED" },
+      { pct: 75, status: "Initializing systems...", tag: "SEC", msg: "ENCRYPTED SESSION KEY MINTED AND GENERATED" },
+      { pct: 90, status: "Connecting to PTFS airspace...", tag: "FLIGHTS", msg: "DOWNTOWN METAR CACHE ACTIVE // WEATHER SYSTEM CONNECTED" },
+      { pct: 100, status: "Ready to launch dashboard.", tag: "PILOT", msg: "WELCOME ABOARD, PILOT!" }
+    ];
+
+    // Helper to log console line
+    function printConsoleLine(tag, msg, isOk = false, highlight = false) {
+      const line = document.createElement('div');
+      line.className = 'console-line';
+      
+      const tagSpan = document.createElement('span');
+      tagSpan.className = 'console-tag' + (isOk ? ' ok' : '');
+      tagSpan.textContent = `[${tag}]`;
+      
+      const msgSpan = document.createElement('span');
+      msgSpan.className = 'console-msg' + (highlight ? ' highlight' : '');
+      msgSpan.textContent = msg;
+      
+      line.appendChild(tagSpan);
+      line.appendChild(msgSpan);
+      
+      // Insert line before the cursor line
+      consoleTerminal.insertBefore(line, cursorLine);
+      
+      // Auto-scroll terminal
+      consoleTerminal.scrollTop = consoleTerminal.scrollHeight;
+      
+      // Play a high-pitch micro terminal beep
+      playSynthBeep(isOk ? 1600 : 1200, 0.03, 'sine');
+    }
+
+    // Update progress bar GUI
+    function updateProgress(percentage) {
+      progressPct.textContent = `${Math.round(percentage)}%`;
+      const activeBlocksCount = Math.floor((percentage / 100) * totalBlocks);
+      for (let i = 0; i < totalBlocks; i++) {
+        if (i < activeBlocksCount) {
+          blockElements[i].classList.add('active');
+        } else {
+          blockElements[i].classList.remove('active');
+        }
+      }
+    }
+
+    // Custom staff information fetched dynamically
+    let staffUser = {
+      username: "Staff Member",
+      avatarUrl: "",
+      isManager: false,
+      isOwner: false,
+      isBod: false
+    };
+
+    // Load data from Auth API first
+    async function loadSessionAndBoot() {
+      // Check query parameter for mock mode (convenient for visual testing)
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('mock') === '1' || params.get('test') === '1') {
+        staffUser.username = params.get('username') || "Captain David";
+        staffUser.isOwner = true;
+        staffUser.avatarUrl = "https://cdn.discordapp.com/embed/avatars/0.png";
+        
+        const img = document.getElementById('avatar-image');
+        const fallback = document.getElementById('avatar-fallback');
+        img.src = staffUser.avatarUrl;
+        img.onload = () => {
+          fallback.style.display = 'none';
+          img.classList.add('loaded');
+        };
+        
+        bootSequence();
+        return;
+      }
+
+      try {
+        const response = await fetch('/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.authenticated) {
+            staffUser.username = data.username;
+            staffUser.avatarUrl = data.avatar;
+            staffUser.isManager = data.is_manager;
+            staffUser.isOwner = data.is_owner;
+            staffUser.isBod = data.is_bod;
+
+            // Load Avatar image
+            if (staffUser.avatarUrl) {
+              const img = document.getElementById('avatar-image');
+              const fallback = document.getElementById('avatar-fallback');
+              img.src = staffUser.avatarUrl;
+              img.onload = () => {
+                fallback.style.display = 'none';
+                img.classList.add('loaded');
+              };
+            }
+          } else {
+            // Redirect immediately to login if not authenticated
+            window.location.href = '/login.html?error=session_expired';
+            return;
+          }
+        } else {
+          window.location.href = '/login.html?error=auth_failed';
+          return;
+        }
+      } catch (e) {
+        console.error("Auth fetch failed:", e);
+      }
+
+      // Start the animated booting sequence
+      bootSequence();
+    }
+
+    // Animated charging & terminal printing boot-up loop
+    function bootSequence() {
+      let currentPct = 0;
+      let stepIndex = 0;
+
+      // Adjust dynamic greetings
+      let roleClearance = "HOSTER_CLEARANCE";
+      if (staffUser.isOwner) roleClearance = "OWNER_CLEARANCE (ROOT)";
+      else if (staffUser.isBod) roleClearance = "BOD_CLEARANCE (ADMIN)";
+      else if (staffUser.isManager) roleClearance = "MANAGER_CLEARANCE";
+
+      bootSteps[3].msg = `ROLE_CLEARANCE: ${roleClearance} APPROVED`;
+      bootSteps[6].msg = `WELCOME ABOARD, ${staffUser.username.toUpperCase()}!`;
+
+      // Set titles
+      document.getElementById('hud-title-main').textContent = "Initializing Systems";
+
+      // Enable Web Audio on clicking screen to guarantee audio can play
+      document.body.addEventListener('click', () => {
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      }, { once: true });
+
+      const interval = setInterval(() => {
+        currentPct += 1.5;
+        if (currentPct > 100) currentPct = 100;
+        
+        updateProgress(currentPct);
+
+        // Check if we hit the next scheduled boot step
+        if (stepIndex < bootSteps.length && currentPct >= bootSteps[stepIndex].pct) {
+          const step = bootSteps[stepIndex];
+          statusLabel.textContent = step.status;
+          
+          const isOk = step.pct >= 90 || step.pct === 25 || step.pct === 60;
+          const highlight = step.pct === 100;
+          
+          printConsoleLine(step.tag, step.msg, isOk, highlight);
+          stepIndex++;
+        }
+
+        if (currentPct >= 100) {
+          clearInterval(interval);
+          completeBoot();
+        }
+      }, 35);
+    }
+
+    // Boot complete, perform fade-out and redirect
+    function completeBoot() {
+      // Success alert audio sound
+      setTimeout(() => {
+        playSynthBeep(900, 0.08, 'sine');
+        setTimeout(() => {
+          playSynthBeep(1800, 0.18, 'sine');
+        }, 80);
+      }, 200);
+
+      // Flickering text title
+      setTimeout(() => {
+        document.getElementById('hud-title-main').textContent = "ACCESS GRANTED";
+        document.getElementById('hud-title-main').style.color = "var(--green)";
+        document.getElementById('hud-title-main').style.textShadow = "0 0 15px var(--green-glow)";
+        statusLabel.textContent = "Entering airspace...";
+        statusLabel.style.color = "var(--green)";
+      }, 500);
+
+      // Fade out frame and screen, then redirect
+      setTimeout(() => {
+        const overlay = document.getElementById('fade-overlay');
+        const frame = document.getElementById('hud-frame');
+        
+        overlay.classList.add('active');
+        frame.style.opacity = '0';
+        frame.style.transform = 'scale(0.97)';
+        
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 600);
+      }, 1800);
+    }
+
+    // Initiate loading sequence
+    window.addEventListener('DOMContentLoaded', loadSessionAndBoot);
+  </script>
+</body>
+
+</html>

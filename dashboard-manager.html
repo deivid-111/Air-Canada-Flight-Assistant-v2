@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIC — Manager Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&family=Barlow:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/static/dashboard.css" />
+</head>
+
+<body>
+
+
+  <!-- Impersonation banner — shown when owner is acting as another user -->
+  <div id="impersonate-banner"
+    style="display:none;position:sticky;top:0;z-index:10000;background:#b5001a;color:#fff;font-family:var(--mono);font-size:12px;padding:8px 20px;display:none;align-items:center;gap:12px">
+    <span>⚠ Impersonating <strong id="impersonate-name"></strong> — all actions are performed as this user</span>
+    <button onclick="stopImpersonation()"
+      style="margin-left:auto;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;font-family:var(--mono);font-size:11px;padding:4px 14px;cursor:pointer">✕
+      Stop Impersonating</button>
+  </div>
+  <div id="update-banner"
+    style="display:none;position:sticky;top:0;z-index:9999;padding:10px 20px;align-items:center;gap:12px;font-family:var(--mono);font-size:12px;border-bottom:1px solid transparent">
+    <span id="update-banner-icon" style="font-size:14px">ℹ</span>
+    <span id="update-banner-msg" style="flex:1"></span>
+    <span id="update-banner-by" style="font-size:10px;opacity:.6"></span>
+    <button onclick="dismissBanner()"
+      style="background:none;border:none;color:inherit;cursor:pointer;font-size:16px;padding:0 4px;opacity:.7">✕</button>
+  </div>
+
+  <header>
+    <div class="logo-group">
+      <span class="logo-eyebrow">Air Canada &mdash; PTFS Operations</span>
+      <span class="logo-title">Manager Dashboard</span>
+    </div>
+    <div class="header-right">
+      <div class="status-pill">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">Connecting...</span>
+      </div>
+      <span class="clock" id="clock">00:00:00 UTC</span>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">☀</button>
+      <a href="/dashboard"
+        style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;padding:5px 12px;border:1px solid var(--border);color:var(--subtext);text-decoration:none;transition:all .15s"
+        onmouseover="this.style.borderColor='var(--text)';this.style.color='var(--text)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--subtext)'">← MAIN</a>
+      <a id="btn-owner-dash" href="/dashboard/owner"
+        style="display:none;font-family:var(--mono);font-size:10px;letter-spacing:.08em;padding:5px 12px;border:1px solid var(--yellow);color:var(--yellow);text-decoration:none;transition:all .15s"
+        onmouseover="this.style.background='var(--yellow)';this.style.color='#000'"
+        onmouseout="this.style.background='none';this.style.color='var(--yellow)'">OWNER ↗</a>
+      <div class="user-chip" id="user-chip" style="display:none">
+        <img class="user-avatar" id="user-avatar" src="" alt="" />
+        <span class="user-name" id="user-name"></span>
+        <a class="btn-logout" href="/auth/logout">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-tabs">
+    <button class="page-tab active" id="tab-analytics" onclick="switchPage('analytics')">📊 Analytics</button>
+    <button class="page-tab" id="tab-hosts" onclick="switchPage('hosts')">👥 Hosts</button>
+    <button class="page-tab" id="tab-logs" onclick="switchPage('logs')">📋 Logs</button>
+    <button class="page-tab" id="tab-mgr-actions" onclick="switchPage('mgr-actions')">Actions</button>
+    <button class="page-tab" id="tab-mgr-strikes" onclick="switchPage('mgr-strikes')">Strikes</button>
+    <button class="page-tab" id="tab-mgr-quotas" onclick="switchPage('mgr-quotas')">✈ Quotas</button>
+    <button class="page-tab" id="tab-mgr-customize" onclick="switchPage('mgr-customize')">Customize</button>
+  </div>
+
+  <main id="page-analytics" style="display:block">
+    <div class="section-header">
+      <span class="section-label">Analytics &amp; Passenger Data</span>
+      <div class="section-line"></div>
+      <div style="display:flex;gap:8px;margin-left:auto;flex-shrink:0">
+        <button class="btn-ghost" onclick="exportFlightsCSV()" style="font-size:11px;padding:4px 12px">⬇ CSV</button>
+        <button class="btn-ghost" onclick="exportFlightsJSON()" style="font-size:11px;padding:4px 12px">⬇ JSON</button>
+      </div>
+    </div>
+
+    <!-- ── KPI Hero Row ── -->
+    <div
+      style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);margin:0 2rem 2rem;border:1px solid var(--border)">
+      <div class="an-kpi-cell">
+        <div class="an-kpi-label">Total Flights</div>
+        <div class="an-kpi-val" id="an-total">—</div>
+      </div>
+      <div class="an-kpi-cell">
+        <div class="an-kpi-label">Ended Flights</div>
+        <div class="an-kpi-val" id="an-ended">—</div>
+      </div>
+      <div class="an-kpi-cell">
+        <div class="an-kpi-label">Total Passengers</div>
+        <div class="an-kpi-val accent" id="an-pax-total">—</div>
+      </div>
+      <div class="an-kpi-cell">
+        <div class="an-kpi-label">Avg Pax / Flight</div>
+        <div class="an-kpi-val" id="an-pax-avg">—</div>
+      </div>
+      <div class="an-kpi-cell">
+        <div class="an-kpi-label">On-Time Rate</div>
+        <div class="an-kpi-val green" id="an-ontime-rate">—</div>
+      </div>
+      <div class="an-kpi-cell">
+        <div class="an-kpi-label">Cancel Rate</div>
+        <div class="an-kpi-val red" id="an-cancel-rate">—</div>
+      </div>
+      <div class="an-kpi-cell">
+        <div class="an-kpi-label">Delay Rate</div>
+        <div class="an-kpi-val yellow" id="an-delay-rate">—</div>
+      </div>
+      <div class="an-kpi-cell">
+        <div class="an-kpi-label">Avg Pax Retention</div>
+        <div class="an-kpi-val blue" id="an-retention-rate">—</div>
+      </div>
+      <div class="an-kpi-cell">
+        <div class="an-kpi-label">Codeshares</div>
+        <div class="an-kpi-val" id="an-codeshare-count">—</div>
+      </div>
+    </div>
+
+    <!-- ── 3-column detail grid ── -->
+    <div
+      style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);margin:0 2rem 2rem;border:1px solid var(--border)">
+
+      <!-- Status breakdown -->
+      <div class="an-panel">
+        <div class="an-panel-title">Flight Status Breakdown</div>
+        <div id="an-status-bars" style="display:flex;flex-direction:column;gap:8px;padding-top:4px"></div>
+      </div>
+
+      <!-- Aircraft usage -->
+      <div class="an-panel">
+        <div class="an-panel-title">Aircraft Usage</div>
+        <div id="an-aircraft-bars" style="display:flex;flex-direction:column;gap:8px;padding-top:4px"></div>
+      </div>
+
+      <!-- Top routes -->
+      <div class="an-panel">
+        <div class="an-panel-title">Top Routes</div>
+        <div id="an-routes-list" style="display:flex;flex-direction:column;gap:6px;padding-top:4px"></div>
+      </div>
+    </div>
+
+    <!-- ── Most active hosts ── -->
+    <div style="border:1px solid var(--border);margin:0 2rem 2rem;background:var(--card)">
+      <div class="an-panel-title" style="padding:14px 18px 0">Most Active Hosts</div>
+      <div id="an-hosts-bars" style="display:flex;flex-direction:column;gap:8px;padding:10px 18px 14px"></div>
+    </div>
+
+    <!-- ── Flights per month + Passenger Trend ── -->
+    <div
+      style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);margin:0 2rem 2rem;border:1px solid var(--border)">
+      <div class="an-panel" style="min-height:140px">
+        <div class="an-panel-title">Flights Per Month</div>
+        <div id="an-monthly-bars" style="display:flex;align-items:flex-end;gap:6px;height:90px;padding-top:8px"></div>
+      </div>
+      <div class="an-panel" style="min-height:140px">
+        <div class="an-panel-title" style="display:flex;align-items:center;gap:8px">
+          Passenger Trend
+          <span style="display:flex;gap:4px;margin-left:auto">
+            <button class="calc-preset-btn" id="pax-trend-weekly" onclick="setPaxTrend('weekly')"
+              style="padding:2px 8px;font-size:10px">Weekly</button>
+            <button class="calc-preset-btn" id="pax-trend-monthly" onclick="setPaxTrend('monthly')"
+              style="padding:2px 8px;font-size:10px;opacity:.5">Monthly</button>
+          </span>
+        </div>
+        <div id="an-pax-trend" style="overflow-x:auto;padding-top:8px"></div>
+      </div>
+    </div>
+
+    <!-- ── Heatmap ── -->
+    <div style="border:1px solid var(--border);margin:0 2rem 2rem;background:var(--card)">
+      <div class="an-panel-title" style="padding:14px 18px 0">Peak Departure Hours — UTC Heatmap</div>
+      <div id="an-heatmap" style="overflow-x:auto;padding:10px 18px 14px"></div>
+    </div>
+
+    <!-- ── Route map ── -->
+    <div style="border:1px solid var(--border);margin:0 2rem 2rem;background:var(--card)">
+      <div class="an-panel-title" style="padding:14px 18px 0">Route Network Map</div>
+      <div id="an-route-map" style="position:relative;width:100%;height:340px;background:var(--bg);overflow:hidden">
+        <div
+          style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--dim);font-family:var(--mono);font-size:11px"
+          id="an-route-map-empty">Loading…</div>
+      </div>
+    </div>
+
+    <!-- ── Passenger log table ── -->
+    <div style="border:1px solid var(--border);margin:0 2rem 2rem;background:var(--card);overflow:hidden">
+      <div class="an-panel-title" style="padding:14px 18px 0;display:flex;align-items:center;gap:12px">
+        Passenger Log — Ended Flights
+        <span style="color:var(--dim);font-family:var(--mono);font-size:9px;font-weight:400;margin-left:4px">newest
+          first</span>
+      </div>
+      <div style="overflow-x:auto;padding-bottom:1rem">
+        <table class="an-pax-table" id="an-pax-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Flight</th>
+              <th>Route</th>
+              <th>Date</th>
+              <th>Aircraft</th>
+              <th>Codeshare</th>
+              <th>Status</th>
+              <th>Joined</th>
+              <th>Remained</th>
+              <th>Retention</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="an-pax-body">
+            <tr>
+              <td colspan="11"
+                style="color:var(--dim);text-align:center;padding:1.5rem;font-family:var(--mono);font-size:11px">No
+                ended flights yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="an-retention-summary"
+        style="display:none;padding:10px 18px 14px;font-family:var(--mono);font-size:12px;display:flex;gap:24px;flex-wrap:wrap;border-top:1px solid var(--border)">
+      </div>
+    </div>
+  </main>
+
+  <main id="page-mgr-quotas" style="display:none">
+    <div class="section-header"><span class="section-label">Flight Operations Quota</span><div class="section-line"></div><button class="dbg-refresh" onclick="loadQuotas()">REFRESH</button></div>
+    <div style="margin:0 2rem 1rem;padding:12px 16px;border:1px solid var(--border);background:var(--card);font-family:var(--mono);font-size:11px;color:var(--subtext)">
+      Weekly SOM and FOM targets are controlled from the Owner Dashboard. FOI training must be completed within <b style="color:var(--text)">3 weeks</b>. Reviews occur Monday at 00:00 UTC. Cancelled, rescheduled, incomplete, attendance-missing, and passenger-log-missing flights do not count.
+    </div>
+    <div id="quota-status" style="margin:0 2rem 1rem;font-family:var(--mono);font-size:11px"></div>
+    <div id="quotas-list" style="margin:0 2rem 2rem;display:grid;gap:10px"></div>
+  </main>
+
+  <!-- ─── FLIGHTS PAGE ──────────────────────────────────────────── -->
+
+  <main id="page-hosts" style="display:none">
+    <div class="section-header">
+      <span class="section-label">Host Profiles</span>
+      <div class="section-line"></div>
+      <span class="section-label" style="color:var(--accent);font-size:9px;letter-spacing:.15em">ADMIN ONLY</span>
+    </div>
+
+    <!-- Host comparison panel (manager only) -->
+    <div id="host-compare-panel"
+      style="display:none;margin-bottom:1.5rem;background:var(--card);border:1px solid var(--border);padding:1.5rem">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem">
+        <span style="font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--subtext)">HOST
+          COMPARISON</span>
+        <button onclick="clearComparison()"
+          style="font-family:var(--mono);font-size:10px;padding:3px 10px;background:none;border:1px solid var(--border);color:var(--subtext);cursor:pointer;margin-left:auto">✕
+          Clear</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)">
+        <div id="hc-left" style="background:var(--card);padding:1rem"></div>
+        <div id="hc-right" style="background:var(--card);padding:1rem"></div>
+      </div>
+    </div>
+
+    <div class="hosts-layout">
+
+      <!-- LEFT: host list -->
+      <div class="hosts-sidebar">
+        <div class="hosts-search-wrap">
+          <input type="text" id="hosts-search" placeholder="search name..." oninput="filterHosts()" />
+        </div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--dim);padding:6px 12px;letter-spacing:.05em">
+          Double-click any host to compare side-by-side</div>
+        <div class="hosts-list" id="hosts-list">
+          <div class="hosts-empty">Loading hosts…</div>
+        </div>
+      </div>
+
+      <!-- RIGHT: profile panel -->
+      <div class="host-profile" id="host-profile">
+        <div class="host-profile-empty" id="host-profile-empty">
+          <span style="font-size:2rem">👤</span>
+          <span>Select a host to view their profile</span>
+        </div>
+
+        <!-- Profile content (hidden until a host is selected) -->
+        <div id="host-profile-content" style="display:none">
+
+          <!-- Header -->
+          <div class="hp-header">
+            <img class="hp-avatar" id="hp-avatar" src="" alt="" />
+            <div class="hp-info">
+              <div class="hp-name" id="hp-name">—</div>
+              <div class="hp-id" id="hp-id">—</div>
+              <div class="hp-joined" id="hp-joined">—</div>
+            </div>
+          </div>
+
+          <!-- Stat cards -->
+          <div class="hp-stats-grid">
+            <div class="hp-stat-card">
+              <div class="hp-stat-label">Total Flights</div>
+              <div class="hp-stat-val" id="hp-total">—</div>
+            </div>
+            <div class="hp-stat-card hp-stat-green">
+              <div class="hp-stat-label">On-Time Rate</div>
+              <div class="hp-stat-val" id="hp-ontime-rate">—</div>
+              <div class="hp-stat-sub" id="hp-ontime-sub"></div>
+            </div>
+            <div class="hp-stat-card hp-stat-red">
+              <div class="hp-stat-label">Cancel Rate</div>
+              <div class="hp-stat-val" id="hp-cancel-rate">—</div>
+              <div class="hp-stat-sub" id="hp-cancel-sub"></div>
+            </div>
+            <div class="hp-stat-card hp-stat-yellow">
+              <div class="hp-stat-label">Delay Rate</div>
+              <div class="hp-stat-val" id="hp-delay-rate">—</div>
+              <div class="hp-stat-sub" id="hp-delay-sub"></div>
+            </div>
+            <div class="hp-stat-card hp-stat-blue">
+              <div class="hp-stat-label">Avg Passengers</div>
+              <div class="hp-stat-val" id="hp-avg-pax">—</div>
+            </div>
+            <div class="hp-stat-card">
+              <div class="hp-stat-label">Total Passengers</div>
+              <div class="hp-stat-val" id="hp-total-pax">—</div>
+            </div>
+            <div class="hp-stat-card">
+              <div class="hp-stat-label">Flights Ended</div>
+              <div class="hp-stat-val" id="hp-ended">—</div>
+            </div>
+            <div class="hp-stat-card">
+              <div class="hp-stat-label">Active Flights</div>
+              <div class="hp-stat-val" id="hp-active">—</div>
+            </div>
+            <div class="hp-stat-card hp-stat-green">
+              <div class="hp-stat-label">Best On-Time Streak</div>
+              <div class="hp-stat-val" id="hp-best-streak">—</div>
+            </div>
+            <div class="hp-stat-card">
+              <div class="hp-stat-label">Current Streak</div>
+              <div class="hp-stat-val" id="hp-cur-streak">—</div>
+            </div>
+            <div class="hp-stat-card">
+              <div class="hp-stat-label">Fav Aircraft</div>
+              <div class="hp-stat-val" id="hp-fav-ac">—</div>
+            </div>
+            <div class="hp-stat-card">
+              <div class="hp-stat-label">Busiest Month</div>
+              <div class="hp-stat-val" id="hp-busiest-month">—</div>
+              <div class="hp-stat-sub" id="hp-busiest-month-sub"></div>
+            </div>
+          </div>
+
+          <!-- Extra info rows -->
+          <div class="hp-info-grid" id="hp-info-grid"
+            style="margin:0 1.5rem 1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border)">
+          </div>
+
+          <!-- Top routes -->
+          <div class="hp-section-title">Top Routes</div>
+          <div id="hp-routes-list" style="padding:0 1.5rem 1rem"></div>
+
+          <!-- Flights table -->
+          <div class="hp-section-title">Flight History</div>
+          <div class="hp-table-wrap">
+            <table class="hp-table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Flight</th>
+                  <th>Route</th>
+                  <th>Date</th>
+                  <th>Aircraft</th>
+                  <th>Status</th>
+                  <th>Pax</th>
+                </tr>
+              </thead>
+              <tbody id="hp-flights-body"></tbody>
+            </table>
+          </div>
+
+          <!-- Availability -->
+          <div class="hp-section-title" style="margin-top:1.5rem">Weekly Availability</div>
+          <div style="padding:0 1.5rem 1rem" id="hp-availability">
+            <div style="font-family:var(--mono);font-size:11px;color:var(--dim)">Select a host to view their
+              availability</div>
+          </div>
+
+          <!-- Dashboard activity -->
+          <div class="hp-section-title" style="margin-top:1.5rem">Dashboard Activity</div>
+          <div class="hp-activity-list" id="hp-activity-list">
+            <div class="hosts-empty">No activity found</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <main id="page-logs" style="display:none">
+    <div class="section-header">
+      <span class="section-label">System Logs</span>
+      <div class="section-line"></div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="log-stats" id="log-stats" style="display:none">
+      <div class="log-stat-item err">
+        <div class="log-stat-dot"></div><span class="log-stat-num" id="ls-errors">0</span> errors
+      </div>
+      <div class="log-stat-item warn">
+        <div class="log-stat-dot"></div><span class="log-stat-num" id="ls-warns">0</span> warnings
+      </div>
+      <div class="log-stat-item ok">
+        <div class="log-stat-dot"></div><span class="log-stat-num" id="ls-ok">0</span> success
+      </div>
+      <div class="log-stat-item info">
+        <div class="log-stat-dot"></div><span class="log-stat-num" id="ls-info">0</span> info
+      </div>
+      <div class="log-stat-item info" style="margin-left:auto"><span class="log-stat-num" id="ls-total">0</span> total
+        entries</div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="logs-toolbar">
+      <button class="btn-refresh" onclick="loadLogs()">↺ Refresh Logs</button>
+      <select id="log-filter"
+        style="font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 10px;outline:none;"
+        onchange="filterLogs()">
+        <option value="all">All Levels</option>
+        <option value="error">Errors Only</option>
+        <option value="warn">Warnings</option>
+        <option value="ok">Success</option>
+        <option value="info">Info</option>
+      </select>
+      <select id="log-source"
+        style="font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 10px;outline:none;"
+        onchange="filterLogs()">
+        <option value="all">All Sources</option>
+        <option value="bot">Bot Actions</option>
+        <option value="dashboard">Dashboard</option>
+        <option value="system">System</option>
+      </select>
+      <input type="text" id="log-search" placeholder="search actions..." oninput="filterLogs()"
+        style="font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 10px;outline:none;width:220px;" />
+    </div>
+
+    <div class="logs-list" id="logs-list">
+      <div class="logs-empty">Loading logs…</div>
+    </div>
+  </main>
+
+  <main id="page-mgr-actions" style="display:none">
+    <div class="section-header">
+      <span class="section-label">Manager Actions</span>
+      <div class="section-line"></div>
+    </div>
+    <div style="padding:0 2rem 2rem;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:1100px">
+
+      <!-- Flight Control -->
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:1rem;grid-column:1/-1">
+        <div
+          style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+          Flight Control</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="mgr-fctl-input" placeholder="Flight code e.g. AB12" maxlength="6"
+            style="font-family:var(--mono);font-size:13px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;width:140px;outline:none;text-transform:uppercase"
+            oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')mgrFctlLoad()">
+          <button class="btn-primary" onclick="mgrFctlLoad()" style="font-size:12px;padding:8px 20px">Load</button>
+          <span id="mgr-fctl-err" style="font-family:var(--mono);font-size:11px;color:var(--red);display:none"></span>
+        </div>
+        <div id="mgr-fctl-editor" style="display:none"></div>
+      </div>
+
+      <!-- Banner -->
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px">
+        <div
+          style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+          Dashboard Banner</div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:9px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:4px">TYPE</label>
+          <select id="mgr-banner-type"
+            style="font-family:var(--mono);font-size:11px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 8px;width:100%;outline:none">
+            <option value="info">Info</option>
+            <option value="warn">Warning</option>
+            <option value="ok">Success</option>
+          </select>
+        </div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:9px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:4px">MESSAGE</label>
+          <textarea id="mgr-banner-msg" rows="3"
+            style="font-family:var(--mono);font-size:11px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 8px;width:100%;outline:none;box-sizing:border-box;resize:vertical"></textarea>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-primary" onclick="mgrPublishBanner()"
+            style="font-size:11px;padding:7px 16px">Publish</button>
+          <button class="btn-ghost" onclick="mgrClearBanner()"
+            style="font-size:11px;padding:7px 12px;color:var(--red);border-color:var(--red)">Clear</button>
+        </div>
+      </div>
+
+      <!-- Send as Bot -->
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px">
+        <div
+          style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+          Send as Bot</div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:9px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:4px">CHANNEL</label>
+          <select id="mgr-bot-channel"
+            style="font-family:var(--mono);font-size:11px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 8px;width:100%;outline:none">
+            <option value="announce">Announce</option>
+            <option value="public">Public</option>
+            <option value="log">Log</option>
+          </select>
+        </div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:9px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:4px">MESSAGE</label>
+          <textarea id="mgr-bot-msg" rows="4"
+            style="font-family:var(--mono);font-size:11px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 8px;width:100%;outline:none;box-sizing:border-box;resize:vertical"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-primary" onclick="mgrBotSend()" style="font-size:11px;padding:7px 16px">Send</button>
+          <span id="mgr-bot-status" style="font-family:var(--mono);font-size:10px;display:none"></span>
+        </div>
+      </div>
+
+      <!-- Co-host Requests -->
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px;grid-column:1/-1">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+            Co-host Requests</div>
+          <button class="dbg-refresh" onclick="mgrLoadCohostRequests()" style="font-size:9px;padding:2px 8px">↻
+            REFRESH</button>
+          <span id="mgr-cohost-badge"
+            style="display:none;background:var(--red);color:#fff;font-family:var(--mono);font-size:9px;padding:1px 7px;border-radius:10px"></span>
+        </div>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--dim);margin:0">Hosts requesting to be added as
+          co-pilot on a flight.</p>
+        <div id="mgr-cohost-list" style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--dim)">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Create Flight -->
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px;grid-column:1/-1">
+        <div
+          style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+          Create Flight</div>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--dim);margin:0">Schedule a new flight on behalf of a
+          host.</p>
+        <button class="btn-primary" onclick="openAddFlight()"
+          style="font-size:12px;padding:8px 24px;width:fit-content">+ Create Flight</button>
+      </div>
+
+      <!-- Blackout Dates -->
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px;grid-column:1/-1">
+        <div
+          style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+          Blackout Dates</div>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--dim);margin:0">Flights cannot be created on these
+          dates.</p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="date" id="mgr-blackout-input"
+            style="font-family:var(--mono);font-size:11px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 8px;outline:none">
+          <button class="btn-primary" onclick="mgrAddBlackout()" style="font-size:11px;padding:7px 14px">+ Block
+            Date</button>
+          <span id="mgr-blackout-err"
+            style="font-family:var(--mono);font-size:10px;color:var(--red);display:none"></span>
+        </div>
+        <div id="mgr-blackout-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <main id="page-mgr-strikes" style="display:none">
+    <div class="section-header">
+      <span class="section-label">Strike System</span>
+      <div class="section-line"></div>
+      <button class="dbg-refresh" onclick="mgrStrikesInit()">REFRESH</button>
+    </div>
+    <div style="padding:0 2rem 2rem;max-width:900px;display:flex;flex-direction:column;gap:1.5rem">
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px">
+        <div
+          style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+          Issue Strike</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label
+              style="font-family:var(--mono);font-size:9px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:4px">HOST</label>
+            <select id="strike-host-select"
+              style="font-family:var(--mono);font-size:11px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 8px;width:100%;outline:none">
+              <option value="">Loading hosts...</option>
+            </select>
+          </div>
+          <div>
+            <label
+              style="font-family:var(--mono);font-size:9px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:4px">REASON</label>
+            <input type="text" id="strike-reason" placeholder="Reason for strike..." maxlength="300"
+              style="font-family:var(--mono);font-size:11px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 8px;width:100%;outline:none;box-sizing:border-box">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-primary" onclick="mgrIssueStrike()"
+            style="font-size:11px;padding:7px 16px;background:var(--red);border-color:var(--red)">Issue Strike</button>
+          <span id="strike-status" style="font-family:var(--mono);font-size:10px;display:none"></span>
+        </div>
+      </div>
+      <div>
+        <div
+          style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase;margin-bottom:12px">
+          Strike History</div>
+        <div id="strikes-list" style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--dim)">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <main id="page-mgr-customize" style="display:none">
+    <div class="section-header">
+      <span class="section-label">Customize Dashboard</span>
+      <div class="section-line"></div>
+    </div>
+    <div style="padding:0 2rem 2rem">
+      <p style="font-family:var(--mono);font-size:10px;color:var(--dim);margin:0 0 1rem">Changes are saved to your
+        browser only and do not affect other users.</p>
+      <div id="uie-colors" class="uie-section"></div>
+      <div id="uie-accents" class="uie-section"></div>
+      <div id="uie-status" class="uie-section"></div>
+      <div id="uie-fonts" class="uie-section"></div>
+      <div id="uie-misc" class="uie-section"></div>
+      <div style="display:flex;gap:10px;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+        <button class="btn-primary" onclick="uiEditorSave()" style="font-size:12px;padding:8px 20px">Save</button>
+        <button class="btn-ghost" onclick="uiEditorReset()"
+          style="font-size:12px;padding:8px 14px;color:var(--red);border-color:var(--red)">Reset to Default</button>
+        <span id="ui-editor-saved"
+          style="display:none;font-family:var(--mono);font-size:11px;color:var(--green);align-self:center">Saved</span>
+      </div>
+    </div>
+  </main>
+  <script>window._isSubDashboard = true;</script>
+  <script src="/static/dashboard-shared.js"></script>
+  <script src="/static/dashboard-calc.js"></script>
+  <script src="/static/dashboard-flights.js"></script>
+  <script src="/static/dashboard-core.js?v=20260803c"></script>
+  <script src="/static/dashboard-sounds.js"></script>
+  <script src="/static/dashboard-analytics.js"></script>
+  <script src="/static/dashboard-hosts.js"></script>
+  <script src="/static/dashboard-quotas.js?v=20260823c"></script>
+  <script src="/static/dashboard-extras.js"></script>
+  <script src="/static/dashboard-ui-editor.js"></script>
+
+  <script>
+    function switchPage(page) {
+      ['analytics', 'hosts', 'logs', 'mgr-actions', 'mgr-strikes', 'mgr-quotas', 'mgr-customize'].forEach(function (p) {
+        var el = document.getElementById('page-' + p);
+        var tab = document.getElementById('tab-' + p);
+        if (el) el.style.display = (p === page) ? '' : 'none';
+        if (tab) tab.classList.toggle('active', p === page);
+      });
+      if (page === 'analytics') { if (typeof renderAnalytics === 'function') renderAnalytics(); }
+      if (page === 'hosts') { if (typeof loadHosts === 'function') loadHosts(); }
+      if (page === 'logs') { if (typeof loadLogs === 'function') loadLogs(); }
+      if (page === 'mgr-actions') { if (typeof mgrActionsInit === 'function') mgrActionsInit(); }
+      if (page === 'mgr-strikes') { if (typeof mgrStrikesInit === 'function') mgrStrikesInit(); }
+      if (page === 'mgr-quotas') { if (typeof loadQuotas === 'function') loadQuotas(); }
+      if (page === 'mgr-customize') { if (typeof uiEditorInit === 'function') uiEditorInit(); }
+    }
+
+    // loadLogs() provided by dashboard-core.js
+
+    window.addEventListener('load', async function () {
+      try {
+        var me = await apiFetch('/auth/me');
+        if (!me.authenticated || (!me.is_manager && !me.is_bod && !me.is_owner)) {
+          window.location = '/dashboard'; return;
+        }
+        // Set session globals used by hosts.js, analytics.js etc.
+        sessionUserId = me.user_id || '';
+        sessionUserName = me.username || '';
+        sessionIsHoster = me.has_role || false;
+        sessionIsManager = me.is_manager || false;
+        sessionIsBod = me.is_bod || false;
+        sessionIsOwner = me.is_owner || false;
+        var chip = document.getElementById('user-chip');
+        var name = document.getElementById('user-name');
+        var avatar = document.getElementById('user-avatar');
+        if (chip) chip.style.display = '';
+        if (name) name.textContent = me.username || '';
+        if (avatar) avatar.src = me.avatar || '';
+        var ownerBtn = document.getElementById('btn-owner-dash');
+        if (ownerBtn) ownerBtn.style.display = me.is_owner ? '' : 'none';
+        setApiStatus(true);
+        checkBanner();
+        switchPage('analytics');
+      } catch (e) {
+        window.location = '/dashboard';
+      }
+    });
+  </script>
+
+  <!-- ─── FLIGHT DRAWER & MODALS (required for flight management) ─── -->
+  <div id="loading-bar"
+    style="display:none;position:fixed;top:0;left:0;width:100%;height:3px;background:var(--accent);z-index:9999;animation:loadpulse 1s infinite">
+  </div>
+  <div id="toast-container"
+    style="position:fixed;bottom:1.5rem;right:1.5rem;display:flex;flex-direction:column;gap:8px;z-index:9999"></div>
+
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-flight-num" id="d-flight-num">—</div>
+        <div class="drawer-route" id="d-route">—</div>
+      </div>
+      <button class="drawer-close" id="drawer-close-btn" onclick="closeDrawer()">✕</button>
+    </div>
+    <div id="drawer-saving-banner" style="display:none"><span>⏳ Saving changes — please wait…</span></div>
+    <div class="drawer-body">
+      <div class="drawer-admin-section">
+        <div class="drawer-admin-title">⚡ Admin Controls</div>
+        <div class="admin-btn-grid">
+          <button class="btn-admin success" onclick="adminAction('not_started')">⏸ Not Started</button>
+          <button class="btn-admin success" onclick="openStartFlight()">🛫 Start Flight</button>
+          <button class="btn-admin warn" onclick="adminAction('close_flight')">🔒 Close Gates</button>
+          <button class="btn-admin" onclick="openSendReminder()">⏰ Send Reminder</button>
+          <button class="btn-admin" onclick="openFlightAnnounce()">📣 Announce</button>
+          <button class="btn-admin" onclick="refreshDiscordEmbed()">↺ Refresh Embed</button>
+          <button class="btn-admin danger" onclick="confirmDeleteFlight()">🗑 Delete Flight</button>
+          <button class="btn-admin full" onclick="markFlightEnded()">✅ Mark as Ended</button>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Flight Status</div>
+        <div class="drawer-grid">
+          <div class="drawer-field edit">
+            <label>Status</label>
+            <select id="d-status" onchange="markDirty()">
+              <option value="On–Time">On–Time</option>
+              <option value="Delayed">Delayed</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Rescheduled">Rescheduled</option>
+              <option value="N/A">N/A</option>
+              <option value="Ended">Ended</option>
+            </select>
+          </div>
+          <div class="drawer-field edit">
+            <label>Meal Service</label>
+            <select id="d-meal" onchange="markDirty()">
+              <option value="Meal Service">Meal Service</option>
+              <option value="Snack Service">Snack Service</option>
+              <option value="No Meal Service">No Meal Service</option>
+              <option value="N/A">N/A</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Departure</div>
+        <div class="drawer-grid">
+          <div class="drawer-field"><label>Airport</label>
+            <div class="val" id="d-dep-airport">—</div>
+          </div>
+          <div class="drawer-field"><label>Time</label>
+            <div class="val mono" id="d-dep-time">—</div>
+          </div>
+          <div class="drawer-field"><label>Terminal</label>
+            <div class="val" id="d-terminal">—</div>
+          </div>
+          <div class="drawer-field edit"><label>Gate</label><input type="text" id="d-gate-dep" maxlength="3"
+              oninput="markDirty()" /></div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Arrival</div>
+        <div class="drawer-grid">
+          <div class="drawer-field"><label>Airport</label>
+            <div class="val" id="d-arr-airport">—</div>
+          </div>
+          <div class="drawer-field"><label>Time</label>
+            <div class="val mono" id="d-arr-time">—</div>
+          </div>
+          <div class="drawer-field edit"><label>Gate</label><input type="text" id="d-gate-arr" maxlength="3"
+              oninput="markDirty()" /></div>
+          <div class="drawer-field"><label>Aircraft</label>
+            <div class="val" id="d-aircraft">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Links & Server</div>
+        <div class="drawer-grid">
+          <div class="drawer-field edit"><label>Server Link</label><input type="text" id="d-server-link"
+              oninput="markDirty()" /></div>
+          <div class="drawer-field edit"><label>Event Link</label><input type="text" id="d-event-link"
+              oninput="markDirty()" /></div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Alerts</div>
+        <div class="drawer-field edit"><label>Alert Text</label><input type="text" id="d-alerts"
+            placeholder="Weather delay possible..." oninput="markDirty()" /></div>
+      </div>
+      <div class="drawer-section" id="d-postflight-section">
+        <div class="drawer-section-title">Post-Flight Report</div>
+        <div class="drawer-grid" style="margin-bottom:12px">
+          <div class="drawer-field edit" style="grid-column:1/-1">
+            <label>Final Status</label>
+            <select id="d-final-status" onchange="markDirty()">
+              <option value="">— Unknown —</option>
+              <option value="On–Time">On–Time</option>
+              <option value="Delayed">Delayed</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Rescheduled">Rescheduled</option>
+            </select>
+          </div>
+        </div>
+        <div class="drawer-grid">
+          <div class="drawer-field edit"><label>Passengers Joined</label><input type="number" id="d-pax-joined" min="0"
+              max="999" placeholder="0" oninput="markDirty(); updateRetentionPreview()" style="width:100%" /></div>
+          <div class="drawer-field edit"><label>Passengers Remained</label><input type="number" id="d-pax-remained"
+              min="0" max="999" placeholder="0" oninput="markDirty(); updateRetentionPreview()" style="width:100%" />
+          </div>
+          <div class="drawer-field" style="grid-column:1/-1"><label>Retention</label>
+            <div id="d-retention-preview"
+              style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--subtext);padding:6px 0">—</div>
+          </div>
+          <div class="drawer-field" style="grid-column:1/-1"><label>Notes</label><input type="text" id="d-pax-notes"
+              placeholder="e.g. full flight, early departure" oninput="markDirty()"
+              style="width:100%;font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;outline:none;" />
+          </div>
+        </div>
+        <input type="hidden" id="d-pax" />
+      </div>
+    </div>
+    <div class="drawer-actions">
+      <button class="btn-primary" id="save-btn" onclick="saveChanges()" disabled>Save Changes</button>
+      <button class="btn-ghost" onclick="closeDrawer()">Discard</button>
+    </div>
+  </div>
+
+  <!-- Add Flight Modal -->
+  <div class="mini-modal-overlay" id="add-overlay" onclick="closeAddFlight()"></div>
+  <div class="mini-modal" id="add-modal" style="max-width:620px;width:94vw">
+    <div class="mini-modal-header"><span>Add New Flight</span><button class="drawer-close"
+        onclick="closeAddFlight()">✕</button></div>
+    <div style="padding:1.25rem 1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:10px 16px">
+      <div class="drawer-field edit"><label>Flight Number</label><input id="af-fn" type="text" placeholder="AC 123" />
+      </div>
+      <div class="drawer-field edit"><label>Aircraft</label><select id="af-ac">
+          <option value="">— select —</option>
+          <option>B737</option>
+          <option>B738</option>
+          <option>B739</option>
+          <option>B77W</option>
+          <option>B789</option>
+          <option>A319</option>
+          <option>A320</option>
+          <option>A321</option>
+          <option>A332</option>
+          <option>A333</option>
+          <option>A359</option>
+          <option>A388</option>
+          <option>Q400</option>
+          <option>E175</option>
+          <option>CRJ9</option>
+        </select></div>
+      <div class="drawer-field edit"><label>Date (YYYY-MM-DD)</label><input id="af-date" type="text"
+          placeholder="2025-06-15" /></div>
+      <div class="drawer-field edit"><label>Duration (HH:MM)</label><input id="af-dur" type="text"
+          placeholder="05:30" /></div>
+      <div class="drawer-field edit"><label>Dep City</label><input id="af-dcity" type="text" /></div>
+      <div class="drawer-field edit"><label>Dep Code</label><input id="af-dcode" type="text" maxlength="4" /></div>
+      <div class="drawer-field edit" style="grid-column:1/-1"><label>Dep Airport Name</label><input id="af-dairport"
+          type="text" /></div>
+      <div class="drawer-field edit"><label>Dep Time (HH:MM UTC)</label><input id="af-dtime" type="text"
+          placeholder="14:00" /></div>
+      <div class="drawer-field edit"><label>Arr City</label><input id="af-acity" type="text" /></div>
+      <div class="drawer-field edit"><label>Arr Code</label><input id="af-acode" type="text" maxlength="4" /></div>
+      <div class="drawer-field edit" style="grid-column:1/-1"><label>Arr Airport Name</label><input id="af-aairport"
+          type="text" /></div>
+      <div class="drawer-field edit"><label>Arr Time (HH:MM UTC)</label><input id="af-atime" type="text"
+          placeholder="19:30" /></div>
+      <div class="drawer-field edit"><label>Meal Service</label><select id="af-meal">
+          <option value="N/A">N/A</option>
+          <option>Meal Service</option>
+          <option>Snack Service</option>
+          <option>No Meal Service</option>
+        </select></div>
+      <div class="drawer-field edit"><label>Host User ID</label><input id="af-host" type="text" /></div>
+      <div class="drawer-field edit"><label>Event Link *</label><input id="af-event" type="text" /></div>
+      <div class="drawer-field edit full"
+        style="flex-direction:row;align-items:center;gap:12px;padding:8px 0;grid-column:1/-1">
+        <input type="checkbox" id="af-codeshare" style="width:16px;height:16px;cursor:pointer" />
+        <label style="cursor:pointer;user-select:none" for="af-codeshare">Codeshare Flight</label>
+        <input id="af-codeshare-fn" type="text" placeholder="Codeshare flight number" style="flex:1" />
+      </div>
+    </div>
+    <div id="add-error"
+      style="display:none;margin:0 1.5rem;padding:8px 12px;background:rgba(255,23,68,.1);border:1px solid var(--red);color:var(--red);font-family:var(--mono);font-size:11px;border-radius:2px">
+    </div>
+    <div class="drawer-actions" style="padding:1rem 1.5rem"><button class="btn-primary"
+        onclick="submitAddFlight()">Create Flight</button><button class="btn-ghost"
+        onclick="closeAddFlight()">Cancel</button></div>
+  </div>
+
+  <!-- Start Flight Modal -->
+  <div class="mini-modal-overlay" id="start-overlay" onclick="closeMiniModal('start')"></div>
+  <div class="mini-modal" id="start-modal">
+    <div class="mini-modal-header"><span>Start Flight</span><button class="drawer-close"
+        onclick="closeMiniModal('start')">✕</button></div>
+    <div style="padding:1rem 1.5rem;display:flex;flex-direction:column;gap:12px">
+      <div class="drawer-field edit"><label>Server Link</label><input id="sm-server-link" type="text"
+          placeholder="https://..." /></div>
+      <div class="drawer-field edit"><label>Spawn Location (optional)</label><input id="sm-spawn" type="text"
+          placeholder="Gate A12" /></div>
+    </div>
+    <div class="drawer-actions"><button class="btn-primary" onclick="submitStartFlight()">Start</button><button
+        class="btn-ghost" onclick="closeMiniModal('start')">Cancel</button></div>
+  </div>
+
+  <!-- Send Reminder Modal -->
+  <div class="mini-modal-overlay" id="remind-overlay" onclick="closeMiniModal('remind')"></div>
+  <div class="mini-modal" id="remind-modal">
+    <div class="mini-modal-header"><span>Send Reminder</span><button class="drawer-close"
+        onclick="closeMiniModal('remind')">✕</button></div>
+    <div style="padding:1rem 1.5rem">
+      <div class="drawer-field edit"><label>Opening Time</label><input id="sm-remind-time" type="text"
+          placeholder="30min / 1h" /></div>
+    </div>
+    <div class="drawer-actions"><button class="btn-primary" onclick="submitSendReminder()">Send</button><button
+        class="btn-ghost" onclick="closeMiniModal('remind')">Cancel</button></div>
+  </div>
+
+  <!-- Global Announce Modal -->
+  <div class="mini-modal-overlay" id="gannounce-overlay" onclick="closeMiniModal('gannounce')"></div>
+  <div class="mini-modal" id="gannounce-modal">
+    <div class="mini-modal-header"><span>Global Announcement</span><button class="drawer-close"
+        onclick="closeMiniModal('gannounce')">✕</button></div>
+    <div style="padding:1rem 1.5rem"><textarea id="ga-msg" rows="5" placeholder="Message to send to Discord..."
+        style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px;resize:vertical"></textarea>
+    </div>
+    <div class="drawer-actions"><button class="btn-primary" onclick="submitGlobalAnnounce()">Send</button><button
+        class="btn-ghost" onclick="closeMiniModal('gannounce')">Cancel</button></div>
+  </div>
+
+  <!-- Per-flight Announce Modal -->
+  <div class="mini-modal-overlay" id="pfannounce-overlay" onclick="closeMiniModal('pfannounce')"></div>
+  <div class="mini-modal" id="pfannounce-modal" style="max-width:560px;width:94vw">
+    <div class="mini-modal-header">
+      <span>Announce — <span id="pa-flight-code">—</span> <span id="pa-flight-num"
+          style="color:var(--subtext);font-weight:400"></span></span>
+      <button class="drawer-close" onclick="closeMiniModal('pfannounce')">✕</button>
+    </div>
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border)">
+      <button class="announce-tab active" onclick="switchAnnounceTab('templates',this)">Templates</button>
+      <button class="announce-tab" onclick="switchAnnounceTab('custom',this)">Custom</button>
+    </div>
+    <div class="announce-pane active" id="pa-pane-templates">
+      <div id="template-list" style="display:flex;flex-direction:column;gap:0"></div>
+      <div id="pa-template-editor" style="display:none;padding:12px 16px;border-top:1px solid var(--border)">
+        <textarea id="pa-template-text" rows="6"
+          style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:8px;resize:vertical"></textarea>
+      </div>
+    </div>
+    <div class="announce-pane" id="pa-pane-custom" style="display:none;padding:12px 16px">
+      <textarea id="pa-custom-text" rows="6" placeholder="Custom message..."
+        style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:8px;resize:vertical"></textarea>
+    </div>
+    <div class="drawer-actions"><button class="btn-primary" onclick="submitFlightAnnounce()">Send</button><button
+        class="btn-ghost" onclick="closeMiniModal('pfannounce')">Cancel</button></div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div class="mini-modal-overlay" id="delete-overlay" onclick="closeMiniModal('delete')"></div>
+  <div class="mini-modal" id="delete-modal">
+    <div class="mini-modal-header"><span style="color:var(--red)">Delete Flight</span><button class="drawer-close"
+        onclick="closeMiniModal('delete')">✕</button></div>
+    <div style="padding:1rem 1.5rem">
+      <div class="danger-confirm-box show" id="delete-confirm-text">
+        <span>⚠ This action cannot be undone.</span><br>
+        Delete flight <strong id="delete-confirm-code" style="color:var(--text)">—</strong>?
+      </div>
+    </div>
+    <div class="drawer-actions"><button class="btn-ghost" onclick="closeMiniModal('delete')">Cancel</button><button
+        class="btn-primary" style="background:var(--red);border-color:var(--red)"
+        onclick="submitDeleteFlight()">Delete</button></div>
+  </div>
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈</text></svg>">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIC — Owner Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&family=Barlow:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/static/dashboard.css" />
+</head>
+
+<body>
+
+
+  <!-- Impersonation banner — shown when owner is acting as another user -->
+  <div id="impersonate-banner"
+    style="display:none;position:sticky;top:0;z-index:10000;background:#b5001a;color:#fff;font-family:var(--mono);font-size:12px;padding:8px 20px;display:none;align-items:center;gap:12px">
+    <span>⚠ Impersonating <strong id="impersonate-name"></strong> — all actions are performed as this user</span>
+    <button onclick="stopImpersonation()"
+      style="margin-left:auto;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;font-family:var(--mono);font-size:11px;padding:4px 14px;cursor:pointer">✕
+      Stop Impersonating</button>
+  </div>
+  <div id="update-banner"
+    style="display:none;position:sticky;top:0;z-index:9999;padding:10px 20px;align-items:center;gap:12px;font-family:var(--mono);font-size:12px;border-bottom:1px solid transparent">
+    <span id="update-banner-icon" style="font-size:14px">ℹ</span>
+    <span id="update-banner-msg" style="flex:1"></span>
+    <span id="update-banner-by" style="font-size:10px;opacity:.6"></span>
+    <button onclick="dismissBanner()"
+      style="background:none;border:none;color:inherit;cursor:pointer;font-size:16px;padding:0 4px;opacity:.7">✕</button>
+  </div>
+
+  <header>
+    <div class="logo-group">
+      <span class="logo-eyebrow">Air Canada &mdash; PTFS Operations</span>
+      <span class="logo-title">Owner Dashboard</span>
+    </div>
+    <div class="header-right">
+      <div class="status-pill">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">Connecting...</span>
+      </div>
+      <span class="clock" id="clock">00:00:00 UTC</span>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">☀</button>
+      <a href="/dashboard/manager"
+        style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;padding:5px 12px;border:1px solid var(--accent);color:var(--accent);text-decoration:none;transition:all .15s"
+        onmouseover="this.style.background='var(--accent)';this.style.color='#fff'"
+        onmouseout="this.style.background='none';this.style.color='var(--accent)'">MANAGER ↗</a>
+      <a href="/dashboard"
+        style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;padding:5px 12px;border:1px solid var(--border);color:var(--subtext);text-decoration:none;transition:all .15s"
+        onmouseover="this.style.borderColor='var(--text)';this.style.color='var(--text)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--subtext)'">← MAIN</a>
+      <div class="user-chip" id="user-chip" style="display:none">
+        <img class="user-avatar" id="user-avatar" src="" alt="" />
+        <span class="user-name" id="user-name"></span>
+        <a class="btn-logout" href="/auth/logout">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-tabs">
+    <button class="page-tab active" id="tab-home" onclick="switchPage('home')">🏠 Home</button>
+    <button class="page-tab" id="tab-debug" onclick="switchPage('debug')">🔧 Diagnostics</button>
+    <button class="page-tab" id="tab-features" onclick="switchPage('features')">⚙ Features</button>
+    <button class="page-tab" id="tab-banner" onclick="switchPage('banner')">📢 Banner</button>
+    <button class="page-tab" id="tab-presence" onclick="switchPage('presence')">🤖 Bot Status</button>
+    <button class="page-tab" id="tab-users" onclick="switchPage('users')">👤 Users</button>
+    <button class="page-tab" id="tab-quotas" onclick="switchPage('quotas')">✈ Quota Admin</button>
+    <button class="page-tab" id="tab-settings" onclick="switchPage('settings')">⚙ Settings</button>
+    <button class="page-tab" id="tab-templates" onclick="switchPage('templates')">📝 Templates</button>
+    <button class="page-tab" id="tab-customize" onclick="switchPage('customize')">🎨 Customize</button>
+    <button class="page-tab" id="tab-calendar" onclick="switchPage('calendar')">📅 Blackout</button>
+  </div>
+
+  <!-- HOME -->
+  <main id="page-home" style="display:none">
+    <div style="padding:1.5rem 2rem 2rem;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:1100px">
+
+      <!-- MOTD card -->
+      <div id="motd-card"
+        style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);padding:1.25rem 1.5rem;display:flex;align-items:center;gap:1.25rem">
+        <div style="font-size:2rem;flex-shrink:0">✈</div>
+        <div style="flex:1">
+          <div id="motd-greeting"
+            style="font-family:var(--cond);font-size:1.1rem;font-weight:600;color:var(--text);letter-spacing:.03em">Good
+            morning</div>
+          <div id="motd-body"
+            style="font-family:var(--mono);font-size:11px;color:var(--subtext);margin-top:4px;line-height:1.7">Loading…
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div id="motd-date" style="font-family:var(--mono);font-size:10px;color:var(--dim)"></div>
+          <div id="motd-uptime" style="font-family:var(--mono);font-size:11px;color:var(--green);margin-top:4px"></div>
+        </div>
+      </div>
+
+      <!-- Activity feed -->
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+            Audit Trail</div>
+          <button class="dbg-refresh" onclick="loadActivityFeed()" style="font-size:9px;padding:3px 8px">↻</button>
+        </div>
+        <div id="activity-feed" style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--dim);padding:1rem;text-align:center">Loading…
+          </div>
+        </div>
+      </div>
+
+      <!-- Send as bot -->
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+            Send Message as Bot</div>
+          <button class="dbg-refresh" onclick="loadChannels()" style="font-size:9px;padding:3px 8px"
+            title="Refresh channel list">↻</button>
+        </div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">CHANNEL</label>
+          <select id="bot-send-channel"
+            style="font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;width:100%;outline:none">
+            <option value="">Loading channels…</option>
+          </select>
+        </div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">MESSAGE
+            <span style="color:var(--dim)">— supports Discord markdown</span></label>
+          <textarea id="bot-send-msg" rows="5"
+            placeholder="Type your message here…&#10;&#10;**bold**, *italic*, > quote, :emoji_name:"
+            style="font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 10px;width:100%;outline:none;box-sizing:border-box;resize:vertical;line-height:1.6"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn-primary" onclick="sendBotMessage()" style="font-size:12px;padding:8px 20px">📨
+            Send</button>
+          <span id="bot-send-status" style="font-family:var(--mono);font-size:11px;display:none"></span>
+        </div>
+      </div>
+
+      <!-- Manual flight board post -->
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px">
+        <div
+          style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+          📋 Post Flight Board</div>
+        <p style="font-family:var(--mono);font-size:11px;color:var(--dim);line-height:1.6;margin:0">Manually post or
+          refresh the flight board embed in the public schedule channel. Leave date blank to use today.</p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="date" id="board-post-date"
+            style="font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;outline:none;flex:1" />
+          <button class="btn-primary" onclick="postFlightBoard()"
+            style="font-size:12px;padding:8px 20px;white-space:nowrap">📨 Post</button>
+        </div>
+        <span id="board-post-status" style="display:none;font-family:var(--mono);font-size:11px"></span>
+      </div>
+
+      <!-- Inactive host radar -->
+      <div
+        style="grid-column:1/-1;background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+            🔍 Inactive Host Radar <span id="radar-threshold-label" style="color:var(--dim);font-size:9px"></span></div>
+          <button class="dbg-refresh" onclick="loadInactiveHosts()" style="font-size:9px;padding:3px 8px">↻</button>
+        </div>
+        <div id="inactive-radar-body"
+          style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--dim);padding:1rem;text-align:center">Loading…
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+  <main id="page-quotas" style="display:none">
+    <div class="section-header"><span class="section-label">Quota Administration</span><div class="section-line"></div><button class="dbg-refresh" onclick="loadQuotaAdmin()">↻ REFRESH</button></div>
+    <div style="padding:0 2rem 1rem;font-family:var(--mono);font-size:11px;color:var(--subtext);line-height:1.7">Adjust quota points manually or place a host on leave of absence. LOA weeks are marked exempt and do not remove points. One point is automatically reimbursed every calendar month.</div>
+    <div style="margin:0 2rem 1.25rem;background:var(--card);border:1px solid var(--border);padding:14px 16px;display:flex;align-items:end;gap:14px;flex-wrap:wrap">
+      <div><label style="display:block;font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:5px">SOM / MANAGER F/W</label><input id="quota-som-target" type="number" min="0" max="50" style="width:120px;font-family:var(--mono);background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 9px"></div>
+      <div><label style="display:block;font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:5px">FOM / REGULAR F/W</label><input id="quota-fom-target" type="number" min="0" max="50" style="width:120px;font-family:var(--mono);background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 9px"></div>
+      <button class="btn-primary" onclick="saveQuotaTargets()" style="padding:7px 16px">Save Weekly Targets</button>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--dim)">Set a target to 0 to pause that group’s quota.</span>
+    </div>
+    <div id="quota-admin-list" style="padding:0 2rem 2rem;display:grid;gap:10px"><div class="dbg-loading">Loading quota records…</div></div>
+  </main>
+
+  <!-- DIAGNOSTICS -->
+  <main id="page-debug" style="display:block">
+    <div class="section-header">
+      <span class="section-label">Diagnostics</span>
+      <div class="section-line"></div>
+      <button class="dbg-refresh" onclick="loadDiagnostics()">↻ REFRESH</button>
+    </div>
+    <div id="dbg-body">
+      <div class="dbg-loading">Loading diagnostics…</div>
+    </div>
+    <div class="section-header" style="margin-top:2rem">
+      <span class="section-label">Client Error Log</span>
+      <div class="section-line"></div>
+      <button class="dbg-refresh" onclick="clearErrorLog()" style="color:var(--red)">✕ CLEAR</button>
+    </div>
+    <div id="client-error-log"
+      style="margin:0 2rem 2rem;background:var(--surface);border:1px solid var(--border);font-family:var(--mono);font-size:11px;max-height:240px;overflow-y:auto">
+      <div id="client-error-entries" style="padding:10px 14px;color:var(--subtext)">No errors logged.</div>
+    </div>
+    <div class="section-header" style="margin-top:2rem">
+      <span class="section-label">Bot Configuration</span>
+      <div class="section-line"></div>
+      <button class="dbg-refresh" onclick="loadConfig()">↻ REFRESH</button>
+    </div>
+    <div id="cfg-body">
+      <div class="dbg-loading">Loading config…</div>
+    </div>
+  </main>
+  <!-- FEATURE FLAGS -->
+  <main id="page-features" style="display:none">
+    <div class="section-header">
+      <span class="section-label">Feature Flags</span>
+      <div class="section-line"></div>
+      <button class="dbg-refresh" onclick="loadFeatureFlags()">↻ REFRESH</button>
+    </div>
+    <div style="padding:0 2rem 1.5rem;max-width:520px">
+      <p style="font-family:var(--mono);font-size:11px;color:var(--subtext);margin-bottom:1.25rem;line-height:1.6">
+        Pause or resume background tasks without restarting the bot. Changes take effect on the next task tick.
+      </p>
+      <div id="feature-flags-body" style="margin-bottom:1rem"></div>
+      <button class="btn-primary" onclick="saveFeatureFlags()" style="font-size:11px;padding:6px 18px">Apply
+        Changes</button>
+      <span id="feature-flags-saved"
+        style="display:none;font-family:var(--mono);font-size:11px;color:var(--green);margin-left:10px">✔ Saved!</span>
+    </div>
+  </main>
+
+  <!-- UPDATE BANNER -->
+  <main id="page-banner" style="display:none">
+    <div class="section-header">
+      <span class="section-label">Update Banner</span>
+      <div class="section-line"></div>
+    </div>
+    <div style="padding:0 2rem 2rem;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:1000px">
+
+      <!-- Left: Standard banner -->
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px">
+        <div
+          style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+          Standard Banner <span style="color:var(--dim)">&mdash; one-line strip at top</span></div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">BANNER
+            TYPE</label>
+          <select id="banner-type"
+            style="font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;width:100%;outline:none">
+            <option value="info">ℹ Info (blue)</option>
+            <option value="warn">⚠ Warning (yellow)</option>
+            <option value="ok">✓ Success (green)</option>
+          </select>
+        </div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">MESSAGE</label>
+          <input type="text" id="banner-message" maxlength="200"
+            placeholder="e.g. Scheduled maintenance tonight at 22:00 UTC"
+            style="font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;width:100%;outline:none;box-sizing:border-box" />
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn-primary" onclick="publishBanner()" style="font-size:11px;padding:6px 18px">??
+            Publish</button>
+          <button class="btn-ghost" onclick="clearBanner()"
+            style="font-size:11px;padding:6px 14px;color:var(--red);border-color:var(--red)">✕ Clear</button>
+        </div>
+        <div id="banner-current"
+          style="display:none;padding:10px 14px;border:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--subtext)">
+          No active banner</div>
+      </div>
+
+      <!-- Right: Changelog banner -->
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px">
+        <div
+          style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+          Changelog Banner <span style="color:var(--dim)">&mdash; full modal popup</span></div>
+        <p style="font-family:var(--mono);font-size:11px;color:var(--subtext);line-height:1.6;margin:0">Shows a
+          dismissible modal to all users when they open the dashboard — ideal for listing update notes, new features, or
+          policy changes.</p>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">TITLE</label>
+          <input type="text" id="changelog-title" maxlength="80" placeholder="e.g. Dashboard Update — v2.4"
+            style="font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;width:100%;outline:none;box-sizing:border-box" />
+        </div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">CONTENT
+            <span style="color:var(--dim)">(one item per line — prefix with + for new, * for changed, - for
+              removed)</span></label>
+          <textarea id="changelog-body" rows="8"
+            placeholder="+ Added status rotation for bot presence&#10;+ New User Manager tab&#10;* Analytics page now loads faster&#10;- Removed legacy announce button"
+            style="font-family:var(--mono);font-size:11px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 10px;width:100%;outline:none;box-sizing:border-box;resize:vertical;line-height:1.7"></textarea>
+        </div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">VERSION
+            TAG <span style="color:var(--dim)">(optional)</span></label>
+          <input type="text" id="changelog-version" maxlength="20" placeholder="e.g. v2.4"
+            style="font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;width:160px;outline:none" />
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn-primary" onclick="publishChangelog()" style="font-size:11px;padding:6px 18px">?? Publish
+            Changelog</button>
+          <button class="btn-ghost" onclick="clearChangelog()"
+            style="font-size:11px;padding:6px 14px;color:var(--red);border-color:var(--red)">✕ Clear</button>
+          <button class="btn-ghost" onclick="previewChangelog()" style="font-size:11px;padding:6px 14px">??
+            Preview</button>
+        </div>
+        <div id="changelog-current"
+          style="display:none;padding:10px 14px;border:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--subtext)">
+          No active changelog</div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- BOT PRESENCE -->
+  <main id="page-presence" style="display:none">
+    <div class="section-header">
+      <span class="section-label">Bot Status / Presence</span>
+      <div class="section-line"></div>
+    </div>
+    <div style="padding:0 2rem 2rem;max-width:900px">
+
+      <!-- Mode pill toggle -->
+      <div style="display:flex;gap:0;margin-bottom:1.5rem;border:1px solid var(--border);width:fit-content">
+        <button id="pmode-static" onclick="setPresenceMode('static')"
+          style="font-family:var(--mono);font-size:11px;padding:8px 24px;border:none;cursor:pointer;background:var(--accent);color:#fff;transition:all .15s">
+          Single Status
+        </button>
+        <button id="pmode-rotation" onclick="setPresenceMode('rotation')"
+          style="font-family:var(--mono);font-size:11px;padding:8px 24px;border:none;cursor:pointer;background:transparent;color:var(--subtext);transition:all .15s">
+          Status Rotation
+        </button>
+      </div>
+
+      <!-- Static panel -->
+      <div id="presence-static-panel"
+        style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1.5rem;max-width:900px">
+        <div style="background:var(--card);border:1px solid var(--border);padding:1.25rem">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);margin-bottom:1rem;text-transform:uppercase">
+            Single Status</div>
+          <div style="display:grid;gap:10px">
+            <div>
+              <label
+                style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">ACTIVITY
+                TYPE</label>
+              <select id="presence-type"
+                style="font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;width:100%;outline:none">
+                <option value="playing">🎮 Playing</option>
+                <option value="watching" selected>👀 Watching</option>
+                <option value="listening">🎵 Listening to</option>
+                <option value="competing">🏆 Competing in</option>
+              </select>
+            </div>
+            <div>
+              <label
+                style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">STATUS
+                TEXT</label>
+              <input type="text" id="presence-text" placeholder="e.g. the skies · AC001 · PTFS" maxlength="128"
+                style="font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;width:100%;outline:none;box-sizing:border-box"
+                oninput="updatePresencePreview()" />
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <input type="checkbox" id="presence-enabled" checked style="width:14px;height:14px;cursor:pointer"
+                onchange="updatePresencePreview()" />
+              <label for="presence-enabled"
+                style="font-family:var(--mono);font-size:11px;color:var(--subtext);cursor:pointer">Presence
+                enabled</label>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <button class="btn-primary" onclick="saveBotPresence()" style="font-size:12px;padding:7px 18px">Apply
+                Status</button>
+              <span id="presence-preview" style="font-family:var(--mono);font-size:11px;color:var(--subtext)">watching
+                the skies</span>
+            </div>
+            <div id="presence-error" style="display:none;font-family:var(--mono);font-size:11px;color:var(--red)"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Rotation panel -->
+      <div id="presence-rotation-panel" style="display:none">
+        <div
+          style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px;max-width:480px">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+            Status Rotation</div>
+          <p style="font-family:var(--mono);font-size:11px;color:var(--subtext);line-height:1.6;margin:0">Cycle through
+            up to 5 statuses automatically. Overrides the single status while enabled.</p>
+          <div>
+            <label
+              style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">ROTATE
+              EVERY (minutes)</label>
+            <input type="number" id="rotation-interval" min="1" max="60" value="10"
+              style="font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;width:100px;outline:none" />
+          </div>
+          <div id="rotation-slots" style="display:flex;flex-direction:column;gap:6px"></div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn-ghost" onclick="addRotationSlot()" style="font-size:11px;padding:6px 14px">+ Add
+              Status</button>
+            <button class="btn-primary" onclick="saveRotation()" style="font-size:11px;padding:6px 18px">💾 Save
+              Rotation</button>
+          </div>
+          <span id="rotation-saved" style="display:none;font-family:var(--mono);font-size:11px;color:var(--green)">✔
+            Saved!</span>
+        </div>
+      </div>
+
+      <!-- Discord Online Indicator — always visible regardless of mode -->
+      <div style="margin-top:1.5rem;max-width:480px">
+        <div style="background:var(--card);border:1px solid var(--border);padding:1.25rem">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);margin-bottom:1rem;text-transform:uppercase">
+            Discord Online Indicator</div>
+          <p style="font-family:var(--mono);font-size:11px;color:var(--subtext);margin-bottom:12px;line-height:1.6">
+            Override the bot's Discord status dot — useful during maintenance without changing the activity text.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+            <button class="btn-ghost" onclick="setOnlineStatus('online')"
+              style="font-size:11px;padding:8px;display:flex;align-items:center;gap:8px;justify-content:center"><span
+                style="width:10px;height:10px;border-radius:50%;background:#23a55a;display:inline-block"></span>Online</button>
+            <button class="btn-ghost" onclick="setOnlineStatus('idle')"
+              style="font-size:11px;padding:8px;display:flex;align-items:center;gap:8px;justify-content:center"><span
+                style="width:10px;height:10px;border-radius:50%;background:#f0b232;display:inline-block"></span>Idle</button>
+            <button class="btn-ghost" onclick="setOnlineStatus('dnd')"
+              style="font-size:11px;padding:8px;display:flex;align-items:center;gap:8px;justify-content:center"><span
+                style="width:10px;height:10px;border-radius:50%;background:#f23f43;display:inline-block"></span>Do Not
+              Disturb</button>
+            <button class="btn-ghost" onclick="setOnlineStatus('invisible')"
+              style="font-size:11px;padding:8px;display:flex;align-items:center;gap:8px;justify-content:center"><span
+                style="width:10px;height:10px;border-radius:50%;background:var(--dim);display:inline-block"></span>Invisible</button>
+          </div>
+          <div id="online-status-current" style="font-family:var(--mono);font-size:10px;color:var(--subtext)">Current:
+            unknown</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+
+  <!-- USER MANAGER -->
+  <main id="page-users" style="display:none">
+    <div class="section-header" style="display:flex;align-items:center">
+      <span class="section-label">User Manager</span>
+      <div class="section-line"></div>
+      <button class="dbg-refresh" onclick="loadUserManager()">↻ REFRESH</button>
+    </div>
+    <div style="padding:0 2rem 2rem">
+      <p style="font-family:var(--mono);font-size:11px;color:var(--subtext);margin-bottom:1.25rem;line-height:1.6">
+        All staff who have an active session token. Blocking immediately invalidates their token — they'll be redirected
+        to login.
+      </p>
+      <div id="user-manager-body">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--dim);padding:2rem;text-align:center">Loading…
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- CHANGELOG MODAL (shown to all users on dashboard load) -->
+  <div id="changelog-overlay"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99998;align-items:center;justify-content:center">
+  </div>
+  <div id="changelog-modal"
+    style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99999;background:var(--card);border:1px solid var(--border);width:min(560px,94vw);max-height:85vh;overflow:hidden;flex-direction:column">
+    <div
+      style="padding:1.5rem 1.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px">
+      <div style="flex:1">
+        <div
+          style="font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin-bottom:4px">
+          What's New</div>
+        <div id="cl-modal-title"
+          style="font-family:var(--cond);font-size:1.4rem;font-weight:700;color:var(--text);line-height:1.2">Dashboard
+          Update</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+          <span id="cl-modal-version"
+            style="font-family:var(--mono);font-size:10px;background:var(--accent);color:#fff;padding:2px 8px;display:none"></span>
+          <span id="cl-modal-by" style="font-family:var(--mono);font-size:10px;color:var(--dim)"></span>
+        </div>
+      </div>
+      <button onclick="dismissChangelog()"
+        style="background:none;border:none;color:var(--subtext);cursor:pointer;font-size:18px;padding:0;line-height:1;margin-top:2px">✕</button>
+    </div>
+    <div id="cl-modal-body"
+      style="padding:1.25rem 1.75rem;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:4px"></div>
+    <div style="padding:1rem 1.75rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+      <button class="btn-primary" onclick="dismissChangelog()" style="font-size:12px;padding:8px 24px">Got it ✓</button>
+    </div>
+  </div>
+
+
+  <!-- ── Blackout Calendar ──────────────────────────────────────────────── -->
+  <main id="page-settings" style="display:none">
+    <div class="section-header">
+      <span class="section-label">Owner Settings</span>
+      <div class="section-line"></div>
+      <button class="dbg-refresh" onclick="loadOwnerSettings()">↻ REFRESH</button>
+    </div>
+    <div style="padding:0 2rem 2rem;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:1000px">
+
+      <!-- Nudge settings -->
+      <div
+        style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px">
+        <div
+          style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+          Inactive Host Radar</div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">INACTIVITY
+            THRESHOLD (days)</label>
+          <input type="number" id="os-nudge-threshold" min="1" max="365" value="14"
+            style="font-family:var(--mono);font-size:13px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;width:120px;outline:none" />
+          <div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:5px">Hosts inactive for this
+            many days appear in the radar</div>
+        </div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">NUDGE
+            DM MESSAGE <span style="color:var(--dim)">— use {username} as placeholder</span></label>
+          <textarea id="os-nudge-message" rows="6"
+            style="font-family:var(--mono);font-size:11px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 10px;width:100%;outline:none;box-sizing:border-box;resize:vertical;line-height:1.6"></textarea>
+        </div>
+        <div>
+          <label
+            style="font-family:var(--mono);font-size:10px;color:var(--subtext);letter-spacing:.08em;display:block;margin-bottom:5px">DM
+            FOOTER <span style="color:var(--dim)">(appended after message)</span></label>
+          <input type="text" id="os-nudge-footer" maxlength="100"
+            style="font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;width:100%;outline:none;box-sizing:border-box" />
+        </div>
+      </div>
+
+      <!-- General / notepad -->
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div
+          style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:12px;flex:1">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);text-transform:uppercase">
+            Owner Notepad <span style="color:var(--dim)">— only visible to you</span></div>
+          <textarea id="os-notepad" rows="8" placeholder="Notes, reminders, draft ideas…"
+            style="font-family:var(--mono);font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 10px;width:100%;outline:none;box-sizing:border-box;resize:vertical;line-height:1.6;flex:1"></textarea>
+        </div>
+      </div>
+
+      <!-- Save bar -->
+      <div style="grid-column:1/-1;display:flex;gap:12px;align-items:center">
+        <button class="btn-primary" onclick="saveOwnerSettings()" style="font-size:12px;padding:8px 24px">💾 Save
+          Settings</button>
+        <span id="os-saved" style="display:none;font-family:var(--mono);font-size:11px;color:var(--green)">✔
+          Saved!</span>
+      </div>
+
+    </div>
+  </main>
+
+  <main id="page-customize" style="display:none">
+    <div class="section-header">
+      <span class="section-label">Customize UI</span>
+      <div class="section-line"></div>
+      <span class="section-label" style="color:var(--accent);font-size:9px;letter-spacing:.15em">YOU ONLY · LOCAL</span>
+    </div>
+    <div style="margin:0 2rem 2rem;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+      <div style="display:flex;flex-direction:column;gap:1.5rem">
+        <div style="background:var(--card);border:1px solid var(--border);padding:1.25rem">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);margin-bottom:1rem;text-transform:uppercase">
+            Background &amp; Text</div>
+          <div id="uie-colors"></div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);padding:1.25rem">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);margin-bottom:1rem;text-transform:uppercase">
+            Accent Colours</div>
+          <div id="uie-accents"></div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);padding:1.25rem">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);margin-bottom:1rem;text-transform:uppercase">
+            Status Colours</div>
+          <div id="uie-status"></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1.5rem">
+        <div style="background:var(--card);border:1px solid var(--border);padding:1.25rem">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);margin-bottom:1rem;text-transform:uppercase">
+            Fonts</div>
+          <div id="uie-fonts"></div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);padding:1.25rem">
+          <div
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--subtext);margin-bottom:1rem;text-transform:uppercase">
+            Misc &amp; Presets</div>
+          <div id="uie-misc"></div>
+        </div>
+        <div
+          style="background:var(--card);border:1px solid var(--border);padding:1.25rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="btn-primary" onclick="uiEditorSave()" style="padding:9px 22px">💾 Save</button>
+          <button class="btn-ghost" onclick="uiEditorExport()" style="padding:9px 16px">📋 Copy CSS</button>
+          <button class="btn-ghost" onclick="uiEditorReset()"
+            style="padding:9px 16px;color:var(--red);border-color:var(--red)">↺ Reset</button>
+          <span id="ui-editor-saved" style="display:none;font-family:var(--mono);font-size:11px;color:var(--green)">✔
+            Saved!</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <main id="page-calendar" style="display:none">
+    <div class="section-header" style="margin-bottom:1.5rem">
+      <span class="section-label">Blackout Dates</span>
+      <div class="section-line"></div>
+    </div>
+    <p style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-bottom:1.5rem">Hosts cannot schedule
+      flights on blackout dates. Click a day to toggle.</p>
+    <div style="display:flex;gap:2rem;flex-wrap:wrap;align-items:flex-start;max-width:900px">
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <button class="btn-ghost" onclick="calNav(-1)" style="font-size:16px;padding:2px 12px">&#8249;</button>
+          <span id="cal-month-label"
+            style="font-family:var(--mono);font-size:13px;color:var(--text);min-width:140px;text-align:center"></span>
+          <button class="btn-ghost" onclick="calNav(1)" style="font-size:16px;padding:2px 12px">&#8250;</button>
+          <button class="btn-ghost" onclick="calGoToday()"
+            style="font-size:10px;padding:2px 10px;margin-left:4px">Today</button>
+        </div>
+        <div id="cal-grid"
+          style="display:grid;grid-template-columns:repeat(7,44px);gap:3px;font-family:var(--mono);font-size:11px;text-align:center">
+        </div>
+      </div>
+      <div style="flex:1;min-width:180px">
+        <div
+          style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-bottom:8px">
+          Blackout List</div>
+        <div id="cal-list" style="display:flex;flex-direction:column;gap:4px;max-height:400px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </main>
+
+
+  <!-- TEMPLATES PAGE -->
+  <main id="page-templates" style="display:none">
+    <div class="section-header">
+      <span class="section-label">Message Templates</span>
+      <div class="section-line"></div>
+      <div style="display:flex;gap:10px;align-items:center;margin-left:auto">
+        <span id="tmpl-saved" style="display:none;font-family:var(--mono);font-size:11px;color:var(--green)">✔
+          Saved!</span>
+        <button class="btn-primary" onclick="saveAllTemplates()" style="font-size:11px;padding:5px 16px">💾 Save
+          All</button>
+        <button class="btn-ghost" onclick="resetAllTemplates()" style="font-size:11px;padding:5px 12px">↺ Reset</button>
+        <button class="dbg-refresh" onclick="loadTemplatesPage()">↻ REFRESH</button>
+      </div>
+    </div>
+    <div style="padding:0 2rem 2rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;max-width:1200px"
+      id="templates-body">
+
+      <!-- Announce Templates -->
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--subtext);text-transform:uppercase">Announce
+            Templates</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <button class="btn-ghost" onclick="atAddTemplate()" style="font-size:10px;padding:3px 10px">+ Add</button>
+        </div>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-bottom:12px;line-height:1.6">
+          Used in the per-flight announce modal. Supports <code>{flight_number}</code> and <code>{arr_city}</code>.
+        </p>
+        <div id="at-list" style="display:flex;flex-direction:column;gap:4px"></div>
+      </div>
+
+      <!-- Bot Message Templates -->
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span
+            style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--subtext);text-transform:uppercase">Bot
+            Message Templates</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-bottom:12px;line-height:1.6">
+          Auto-posted by the bot at key moments (reminders, check-in, etc). Edit to customise wording.
+        </p>
+        <div id="bt-list" style="display:flex;flex-direction:column;gap:4px"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>window._isSubDashboard = true;</script>
+  <script src="/static/dashboard-shared.js?v=20260416c"></script>
+  <script src="/static/dashboard-calc.js?v=20260416c"></script>
+  <script src="/static/dashboard-core.js?v=20260803c"></script>
+  <script src="/static/dashboard-sounds.js?v=20260416c"></script>
+  <script src="/static/dashboard-diag.js?v=20260823b"></script>
+  <script src="/static/dashboard-quota-admin.js?v=20260823b"></script>
+  <script src="/static/dashboard-ui-editor.js?v=20260416c"></script>
+  <script src="/static/dashboard-extras.js?v=20260416c"></script>
+
+  <script>
+    function switchPage(page) {
+      ['home', 'debug', 'features', 'banner', 'presence', 'users', 'quotas', 'settings', 'customize', 'calendar', 'templates'].forEach(function (p) {
+        var el = document.getElementById('page-' + p);
+        var tab = document.getElementById('tab-' + p);
+        if (el) el.style.display = (p === page) ? '' : 'none';
+        if (tab) tab.classList.toggle('active', p === page);
+      });
+      if (page === 'home') { loadMotd(); loadActivityFeed(); loadChannels(); loadInactiveHosts(); }
+      if (page === 'debug') { loadDiagnostics(); loadConfig(); _renderErrorLog(); }
+      if (page === 'features') loadFeatureFlags();
+      if (page === 'banner') { loadBannerPublisher(); loadChangelogCurrent(); }
+      if (page === 'presence') { loadBotPresence(); loadRotation(); }
+      if (page === 'users') loadUserManager();
+      if (page === 'quotas') loadQuotaAdmin();
+      if (page === 'settings') { loadOwnerSettings(); }
+      if (page === 'customize') uiEditorInit();
+      if (page === 'calendar') loadCalendar();
+      if (page === 'templates') loadTemplatesPage();
+    }
+
+    window.addEventListener('load', async function () {
+      try {
+        var me = await apiFetch('/auth/me');
+        if (!me.authenticated || !me.is_owner) {
+          window.location = '/dashboard'; return;
+        }
+        sessionUserId = me.id || '';
+        sessionUserName = me.username || '';
+        sessionIsHoster = me.has_role || false;
+        sessionIsManager = me.is_manager || false;
+        sessionIsBod = me.is_bod || false;
+        sessionIsOwner = me.is_owner || false;
+        var chip = document.getElementById('user-chip');
+        var name = document.getElementById('user-name');
+        var avatar = document.getElementById('user-avatar');
+        if (chip) chip.style.display = '';
+        if (name) name.textContent = me.username || '';
+        if (avatar) avatar.src = me.avatar || '';
+        setApiStatus(true);
+        checkBanner();
+        switchPage('home');
+      } catch (e) {
+        window.location = '/dashboard';
+      }
+    });
+  </script>
+</body>
+
+</html>
